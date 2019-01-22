@@ -1,0 +1,6 @@
+1) Add KISS interface real serial port for interface to kiss only tnc
+or to virtual serial port for use with a sound modem.
+
+2) Possibly add interface to connect to AGW server using that protocol
+for modem sharing over ip.
+
