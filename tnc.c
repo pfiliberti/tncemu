@@ -255,6 +255,9 @@ static void emulate (char *filename)
 
         Z80Reset(&state);
         total = timer_int = 0.0;
+
+	sio_int = 0;
+
         for ( ; ; ) {
 /* Enable for some emulator info 
                 printf("PC=%x cycles=%.0f\n",state.pc,total);
