@@ -2,6 +2,11 @@ Credit is given to the following persons who authored the original tnc code and
 have expressed permission to use the binary image here, or where directly 
 involved in the early development of the ax25 protocol.
 
+Z80 CPU Emulator in C
+---------------------
+Lin Ke-Fong
+Repository @ https://github.com/anotherlin/z80emu
+
 ORIGINAL Z80 EPROM CODE:
 ------------------------
 Howard Goldstin N2WX who authored the original tnc software.
