@@ -2,8 +2,24 @@ CC = gcc
 CFLAGS = -Wall -O3 -fomit-frame-pointer -mtune=native
 ROMIMAGE = hk21rom.bin
 
-ifeq ($(MACHTYPE),$(wildcard arm-unknown-linux))
-$(info --- Compiling for arm ---)
+ARCH = $(if $(findstring arm,$(MACHTYPE)),arm,none)
+
+ifeq ($(ARCH),none)
+ARCH = $(if $(findstring i386,$(MACHTYPE)),i386,none)
+endif
+
+ifeq ($(ARCH),none)
+ARCH = $(if $(findstring x86_64,$(MACHTYPE)),x86_64,none)
+endif
+
+ifeq ($(ARCH),none)
+$(info Cannot Determine Architecture!)
+exit
+endif
+
+$(info Compiling for $(ARCH))
+
+ifeq ($(ARCH),arm)
 DEFINES = -DSPEED_PI
 endif
 
@@ -37,12 +53,20 @@ ram:
 	cp ./binary_dumps/tnc.ram .
 
 rom:
-ifeq ($(MACHTYPE),$(wildcard arm-unknown-linux))
+ifeq ($(ARCH),arm)
 	/usr/bin/objcopy --input binary --output elf32-littlearm \
 	--binary-architecture arm --rename-section \
 	.data=.data,alloc,load,data,contents $(ROMIMAGE) rom.o
-else
+endif
+
+ifeq ($(ARCH),i386)
 	/usr/bin/objcopy --input binary --output elf32-i386 \
+	 --binary-architecture i386 --rename-section \
+	.data=.data,alloc,load,data,contents $(ROMIMAGE) rom.o
+endif
+
+ifeq ($(ARCH),x86_64)
+	/usr/bin/objcopy --input binary --output elf64-x86-64 \
 	 --binary-architecture i386 --rename-section \
 	.data=.data,alloc,load,data,contents $(ROMIMAGE) rom.o
 endif
