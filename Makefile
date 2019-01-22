@@ -2,7 +2,8 @@ CC = gcc
 CFLAGS = -Wall -O3 -fomit-frame-pointer -mtune=native
 ROMIMAGE = hk21rom.bin
 
-ifeq ($(MACHTYPE),pi)
+ifeq ($(MACHTYPE),$(wildcard arm-unknown-linux))
+$(info --- Compiling for arm ---)
 DEFINES = -DSPEED_PI
 endif
 
@@ -36,7 +37,7 @@ ram:
 	cp ./binary_dumps/tnc.ram .
 
 rom:
-ifeq ($(MACHTYPE),pi)
+ifeq ($(MACHTYPE),$(wildcard arm-unknown-linux))
 	/usr/bin/objcopy --input binary --output elf32-littlearm \
 	--binary-architecture arm --rename-section \
 	.data=.data,alloc,load,data,contents $(ROMIMAGE) rom.o
