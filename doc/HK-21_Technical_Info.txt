@@ -1,0 +1,84 @@
+Heathkit HK 21 TNC Technical Information
+
+The Heathkit HK-21 Pocket Packet TNC was designed as a z80 based TNC based
+on the TNC2 design. This designed required multiple integrated circuits which
+made the tnc's fairly large by today's standards. They contained a Z80
+microprocessor, Ram Memory, Rom Memory, A CTC timer ic, PIO, Parallel IO ic,
+and an SIO Serial I/O ic along with associated glue logic components.
+The HK-21 however utilized an ASIC from Toshiba the TMPZ84C015 which was a
+complete z80 microcomputersystem on a chip! This IC contained all the the
+functionality mentioned above other than the external Ram and Rom memory
+devices. This allowed the device to be very compact and very small.
+It also was designed in CMOS and consumed less power allowing the HK-21 to
+run on a battery for hours at a time. Perfect for a Ham Radio Operator in
+the field with just a Handheld radio and TNC all running on batteries.
+
+In order to emulate this hardware properly a lot of information was required
+and had to be sourced.
+
+Schematics and Manual of the Heathkit HK-21. I already had these since I had
+the device. I did find a copy online however in pdf format but will not
+publish due to Copyright Restrictions. Toshiba Manual for the TMPZ84C015 ASIC 
+describing where in I/O space the internal peripheral devices where located
+and their associated control registers. How memory was mapped etc. After much
+searching online I did find the original databook for these devices! It was a
+wealth of information.
+
+A z80 emulator in C which we could utilize and modify. Thankfully Lin Ke-Fong
+wrote a fabulous z80 emulator and put it on github free for the world to use.
+The contents of the device program residing in Rom Memory. An old Eprom
+programmer was used to download the contents of the rom image to a file for
+use by the emulator.
+
+After analysis of the Schematics and Toshiba IC Internals the memory map of
+the system was determined:
+
+Ram Memory Address Range 0000h - 7fffh (Ram Size 32k)
+Rom Memory Address Range 7fffh - ffffh (Rom Size 32k)
+
+And the Portmap of the internal I/O Devices
+
+Internal Halt Mode Setting Registers 0xF0 & 0xF1 This controls how the ic
+internal osc operates during certain cpu halt modes. Also watchdog is in here.
+It was decided that we can ignore since we are emulating. Halt Mode Settings
+Register 0xF0 - Code writes an 0x7B Putting All devices in Powered up Run 
+Mode. Halt Mode Control Register 0XF1 - Code writes an 0xB1 to disable 
+watchdog timer since wdog enable bit in 0xF0 is off
+
+Interrupt Priority Register 0xF4 Bits 1,2,0 as follows
+
+HIGH TO LOWEST PRIORITY
+
+CTC - SIO - PIO 0 0 0
+SIO - CTC - PIO 0 0 1 (THIS IS THE ONE THE CODE SELECTS)
+CTC - PIO - SIO 0 1 0
+PIO - SIO - CTC 0 1 1
+PIO - CTC - SIO 1 0 0
+SIO - PIO - CTC 1 0 1
+
+CTC Timer I/O Map
+0x10 = Chan 0
+0x11 = Chan 1
+0x12 = Chan 2
+0x13 = Chan 3
+
+SIO Serial Device I/O Map
+0x18 = Chan A Data (Connected to Modem) ax25 packet data.
+0x19 = Chan A Command
+0x1A = Chan B Data (Connected to Serial Port) User I/O.
+0x1B = Chan B Command
+
+PIO I/O Map (This I/O is currently not emulated used for LED's etc).
+0x1C = Port A Data
+0x1D = Port A Command
+0x1E = Port B Data
+0x1F = Port B Command
+
+If your interested in reading more in depth information about these z80
+peripherals please see
+
+ z80 Peripheral Family at http://www.z80.info/zip/um0081.pdf 
+
+or read the Toshiba Manual contained in the archive.
+
+Have fun learning es 73.

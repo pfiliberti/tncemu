@@ -1,0 +1,34 @@
+Project Abstract
+
+A TNC (Terminal Node Controller) is a device that was developed for the
+ham radio community to allow communications over packet radio networks.
+These devices usually contain a modem and interface to a radio as well as a
+serial port that connects to a dumb terminal, or currently a computer
+running a terminal program, along with a CPU, Ram memory occasionally
+backed up by a battery, and a Rom device that held the non volatile 
+programming for the device. In essence the tnc is a complete microcomputer
+systems designed to run stand alone when not connected to a terminal or
+computer. Most of the basic designs were based on the Z80 Microprocessor
+and followed the basic design of the tnc2 published by TAPR
+(Tucson Amateur Packet Radio) which is beyond the scope of this document.
+For a more complete read of Packet Radio please visit Introduction to Packet
+Radio by Larry Kenney, WB9LOZ.
+
+Most Amateur Radio Operators nowadays wanting to work in Packet Radio use
+software that has been developed for the PC which contains a software modem
+and terminal program to connect to the packet radio network.
+One such software is UZ7HO software Packet-Radio TNC. However this requires
+the PC to always be operational in order to stay connected to the packet
+network 24x7. Even though there are still TNC devices being produced by
+companies such as Kantronics, these devices usually come at a high cost,
+and even devices that are old circa 1980's that are sold on Ebay are usually
+expensive and due to age many have issues and don't work.
+
+With the advent of emulation technologies for PC's a thought popped into
+my head, why not emulate the hardware of a TNC device on a PC running the
+linux operating system of which there are many embedded versions,
+allowing emulation not only on a standard PC but very powerful and
+inexpensive devices such as the Raspberry Pi! Since I myself had an old TNC,
+specifically a Heathkit HK21 Pocket Packet, the hardware of which was
+designed in Japan and also followed some other designs by Paccomm, Inc.,
+I decided to attempt to emulate this device and a project was born.

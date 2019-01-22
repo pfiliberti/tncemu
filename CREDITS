@@ -1,0 +1,30 @@
+Credit is given to the following persons who authored the original tnc code and
+have expressed permission to use the binary image here, or where directly 
+involved in the early development of the ax25 protocol.
+
+ORIGINAL Z80 EPROM CODE:
+------------------------
+Howard Goldstin N2WX who authored the original tnc software.
+
+AX.25-Layer2 Protocol
+---------------------
+AMRAD (Amateur Radio Research and Development) Team Members
+Paul Rinaldo W4RI, Dave Borden K8MMO(sk), Eric Scace K3NA,
+Tom MOulton W2VT, Gordon Beattie N2DSY, Bob Bruninga WB4APR,
+and Terry Fox (WB4JFI now N4TLF).
+
+Harold Price of TAPR 
+Tom Clark AMSAT
+
+The original proposed AX.25 protocol document can be found in the "Second ARRL 
+Amateur Radio Computer Networking Conference Proceedings", March 19, 
+1983, with the original actual protocol document (AX.25 Amateur 
+Packet-Radio Link-Layer Protocol, Version 2.0, October 1984) Copyrighted 
+by the ARRL, but authored Terry L. Fox, WB4JFI.
+
+Protocol published in the Computer Networking Conference (the predecessor 
+conference to the ARRL and TAPR Digital Communications Conference) and the
+ AX.25 Protocol booklet that the ARRL published for a while. Link to
+Proceedings: 
+
+https://archive.org/details/AmateurRadioComputerNetworkingConference1-4

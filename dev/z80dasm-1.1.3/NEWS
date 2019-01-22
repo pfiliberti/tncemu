@@ -1,0 +1,68 @@
+z80dasm 1.1.3
+=============
+
+	Target addresses of relative branches weren't properly wrapped
+	around the boundaries of 16-bit address space, resulting in missing
+	labels for such branches and stack corruption due to a buffer
+	overflow on 64-bit architectures.
+
+	Thanks to Eric Smith for reporting this bug and providing a patch.
+
+z80dasm 1.1.2
+=============
+
+	Added missing files to the tar file.
+
+z80dasm 1.1.1
+=============
+
+	Fixed bug in label creation: a label was created for every 0xdd 
+	command.
+
+z80dasm 1.1.0
+=============
+
+	Rewritten symbol table routines. Support for input symbol files
+	('-S' option). Removed unnecessary and badly documented '-r'
+	option. Better comments in the output symbol file regarding where
+	in the assembly source a particular symbol is used.
+
+	Support for spliting binary file into data and code blocks.
+
+	Automatic labels that are first seen in a "call" instruction are
+	named "sub_XXXXh" instead of "lXXXXh".
+
+z80dasm 1.0.1
+=============
+
+	Various Debian package related changes.
+
+	Unprintable characters are replaced by ASCII dot when using '-t'
+	option (similar to hexdump).
+
+	Some minor bug fixes.
+
+Summary of changes from dz80 3.0 to z80dasm 1.0.0
+=================================================
+
+dz80dat.c:
+	Fixed table entry for "2c" opcode (inc l).
+
+dz80.c:
+	Added undocumented instruction "sli" ("cb 30") to the opcode decoding 
+	logic.  
+
+	Replaced command-line handling code with calls to code in cmdline.c.
+
+	Made Zilog-assembler compatiblity mode run-time configurable.
+
+	Fixed incorrect handling of sign bit for offsets for relative jumps
+	("jr" and "djnz" instructions)
+
+	Fixed handling of unknown or partial opcodes (these are now included
+	in the output with "defb" assembler directives)
+
+	New function for error reporting in cmdline.c
+
+	Disassembler output from pass 1 and 2 redirected from standard output 
+	to temporary files.

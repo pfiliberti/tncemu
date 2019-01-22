@@ -1,0 +1,204 @@
+Emulation
+
+In order to properly emulate the hardware, hooks have to be written and their
+function names added to the z80emu.h i/o functions so that the z80's i/o can
+be trapped and emulated. Before writing these functions stubs were created 
+with printf functions so we could see what the z80 software was doing with 
+i/o on power up. This was done in order to determine how the peripheral 
+devices were being initialized. After this data was captured the code was 
+written to emulate the i/o devices, specifically the SIO Serial device.
+
+Dump of initial i/o
+DI = z80 Instruction to disable all interrupts
+
+IO out 1 to port f4 - Set INT Prio SIO CTC PIO
+
+IO out 2 to port 1b - SIOb->Reg2
+
+IO out 55 to port 1b - Write Int Vec
+
+IO out 2 to port 1b - SIOb->Reg2
+
+IO In from port 1b - 55 Read Int Vec
+
+IO out 2 to port 1b - SIOb->Reg2
+
+IO out aa to port 1b - Write Int Vec
+
+IO out 2 to port 1b - SIOb->Reg2
+
+IO In from port 1b - aa Read Int Vec
+
+IO In from port 19 - 420 Read SIOa status
+
+IO out 0 to port 19 - SIOa->Reg0
+
+IO out 18 to port 19 - SIOA->Reg1 + Chan Reset
+
+IO out 4 to port 19 - SioA->Reg4
+
+IO out 20 to port 19 - Set SIOa SDLC flag 0x7E
+
+IO out 7 to port 19 - SioA->Reg7
+
+IO out 7e to port 19 - Set SIOa SDLC Slave Addr 0x7E
+
+IO out 5 to port 19 - SioA->Reg5
+
+IO out 69 to port 19 - Set SIOa 8bits Tx Enable with CRC
+
+IO out 3 to port 19 - SioA->Reg3
+
+IO out d9 to port 19 = Set SIOa 8bits Tx Enter hunt Enable CRC & Rx
+
+IO out 0 to port 19 - SioA->Reg0
+
+IO out 10 to port 19 - SioA-> External Status Int Reset
+
+IO out 0 to port 19 - Repeat
+
+IO out 10 to port 19
+
+IO out 1 to port 19 - SioA-Reg1
+
+IO out 1f to port 19 - Interrupt on 1st char rx or special cond
+
+IO In from port 19 = 0:430 - SIOa Read
+
+IO In from port 1b = 2c:4ba - SIOb Read
+
+IO out 18 to port 1b - SIOb Chan Reset
+
+IO out 5 to port 1b - SIOb->Reg 5
+
+IO out 2a to port 1b - Set SIOb 7 bits Tx Enable tx RTS true
+
+IO out 3 to port 1b - SIOb->Reg 3
+
+IO out 41 to port 1b - Set SIOb 7bits Rx Enable rx
+
+IO out 4 to port 1b - SIOb->Reg4
+
+IO out 47 to port 1b - set SIOb x16 clock 1 stop bit Parity Even
+
+IO out 2 to port 1b - SIOb->Reg2
+
+IO out 0 to port 1b - Set SIOb INT Vector
+
+IO out 28 to port 1b - SIOb Chan Reset
+
+IO out 10 to port 1b - SIOb External Status Int Reset
+
+IO out 10 to port 1b - SIOb External Status Int Reset
+
+IO out 1 to port 1b - SIOb->Reg 1
+
+IO out 1f to port 1b - Set SIOb Int on rx or spec cond vector mode
+
+IO out a5 to port 10 - Set CTC Timer0 Int /16 clk prescaler Trigger
+
+IO out 60 to port 10 - Set CTC Timer0 Time Constant
+
+IO out 10 to port 10 - Set CTC Timer0 Vector
+
+IO out 7 to port 12 - Set CTC Timer2 Time Constant Reset No Int
+
+IO out 1 to port 12 - Set CTC Timer2 Time Contant
+
+IO out 7 to port 11 - Set CTC Timer1 Time Constant Reset No Int
+
+IO out 8 to port 11 - Set CTC Timer1 Trigger
+
+IO out 7 to port 13 - Set CTC Timer3 Time Contant Reset No Int
+
+IO out 4 to port 13 - Set CTC Timer3 Time Constant
+
+EI
+
+IO out 5 to port 19 - SIOa->Reg 5
+
+IO out e9 to port 19 - Set SIOa DTR True
+
+DI
+
+IO out 5 to port 1b - SIOb->Reg 5
+
+IO out aa to port 1b - Set SIOb DTR True
+
+EI = z80 Instruction to enable all interrupts
+
+DI
+
+IO In from port 1b = 2c:45de Siob-> Read Status
+
+IO out 4e to port f1
+
+IO out 0 to port 1a
+
+Emulation Startup
+Upon startup the program tncemu reads some command line parameters for a 
+destination ip address and port. It will attempt to open a udp connection to 
+that address and port. If one is not specified a default is used. This should 
+be the remote end of an axip connection that is ax25 packet protocol over ip 
+to another remote end that could be a BPQ server or any other type of 
+connection that speaks ax25 over ip. Plans are for a future option to open a 
+kiss protocol port or local pseudo tty with program such as soundmodem 
+listening that speaks kiss so that the ax25 data can be sent out as audio 
+signals over a radio as well as receiving audio ax25 packets from the radio 
+and bringing them back into the emulator. The program also inserts key strokes
+into the keyboard buffer to issue the tnc's day command to set a fake date and
+time for the tnc. The reason for this is so that the tnc software thinks the 
+date was set properly. After analysis it was discovered where in the ram the 
+software stores the date and time. Due to the fact that emulation is not exact
+timing wise the tnc cannot keep the correct time and date using timer 
+interrupts which is how the original firmware kept accurate time after the 
+time was set. Instead the emulator takes the system time from the host and on 
+occasion updates the ram so that the tnc's time matches the emulation host 
+computer's time. The ram storage where the emulators software keeps the date
+and time is located at address 0x4f0a-0x4f0f is 6 databytes containing the 
+following in order, seconds,minutes,hours,day of month, month, year.
+
+Emulating Console Serial I/O
+The TNC Software uses SIO Channel B to talk to the serial port which on a real
+TNC is physically connected to a computer's serial port. We emulated this by
+taking any characters written out the port and presenting them on STDIO so 
+that they would appear on the console screen. When a user of the emulator 
+types on they keyboard we take this data and enter it into a keyboard buffer.
+As long as there are characters in the buffer we trigger a serial port
+interrupt so that the tnc software knows there is data ready to be read from
+the serial port. Then that I/O action occurs we take the next char from our
+keyboard buffer and return it as the data read during the I/O read so that 
+the tnc software thinks it received it from the serial port. In this way the 
+tnc software has no idea that the I/O was redirected to console / keyboard i/o.
+
+Emulating ax25 data serial I/O
+The TNC software builds ax25 packets that normally are sent out through SIO
+Channel A which is physically connected to a modem chip inside the tnc which
+produces the proper mark/space tones that get sent out over the airwaves to
+transmit the ax25 packet radio data. Since the emulator does not currently
+have a modem, but instead we are connected to a remote end of an axip
+connection we emulate the writes to the port by capturing this data into a
+buffer. Once the first byte of a data packet is sent we start a counter
+txundr_count which gets reset whenever the next byte of data is written to
+the SIO channel. This is to emulate a pseudo txunderrun. Normally in real
+hardware once a byte of data is written to the serial channel it begins
+clocking out at the programmed baud rate. The SIO device expects another byte
+of data to be sent to the channel before the clocking of the previous byte is
+complete because the bitstream for ax25 packets is synchronous there can be
+no delays between bits being clocked out. The code emulates all the flags and
+interrupts of the SIO device which informs the tnc software when it can write
+another byte and generates the interrupt level to cause the code to do so.
+Once we get txunderrun we know the packet is complete. In the real TNC the
+transmitter would stop transmitting, in the emulated world we take all the
+data that was captured and send it to the remote end of our axip socket.
+
+In the same sense, data that is received from the axip socket is evaluated
+for integrity with a crc test and then presented to the tnc software as
+characters received on the SIO channel B. In this way we feed the ax25 packet
+data one byte at at time into the tnc software just as if it was being
+received by the serial SIO ic. The sofware has no idea that this I/O is being
+redirected up and down the axip udp network socket.
+
+In the future we plan on allowing this channel to support redirection to a
+kiss pseudo tty so that it can be sent to a software modem in case one wants
+to use this emulator with a radio link as the original hardware did.

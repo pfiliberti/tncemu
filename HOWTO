@@ -1,0 +1,17 @@
+You should be able to type make on the command line and it will build the z80emu and create the rom object
+build tnc and link it all together. Also, if your on raspberry pi you can set the environment variable
+MACHTYPE to pi and it will create the proper rom object for the arm architecture.
+
+The makefile automatically copys a default tnc.ram from the binary_dumps directory. This is an initial
+ram image for the tnc with a lot of the tnc's configuration options preset. You will need to set mycall
+to you callsign by issuing the command "mycall callsign". Once that is set hit ctrl-c to exit the
+program and it will save the ram config with your call. If you want to start fresh like a real cold
+boot delete the file tnc.ram and the tnc will come up in autobaud. You will need to press the *
+several times for it to detect the baudrate. Of course this is fake since there is no baud rate to
+the console but that is how the original tnc works and since we emulate the serial ports its expected.
+When you get the prompt then the tnc will be set to the default values. A lot of the config options
+don't matter since this is an emulator but you can set any of them as if this was a true tnc. Refer
+to the hk-21 manual for what the settings are, or most tnc manuals since a lot of the commands are
+standard. You can use "disp" to see the current settings of the tnc.
+
+

@@ -1,0 +1,6 @@
+; comment
+
+test_bytedata:	start 0x0100 end 0x0200 type bytedata
+test_worddata:	start 0x0200 end 0x0300 type worddata
+test_code:	start 0x0300 end 0x0500 type code
+test_pointers:	start 0x0400 end 0x0410 type pointers

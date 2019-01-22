@@ -1,0 +1,74 @@
+				    z80dasm 
+				    =======
+
+Disassembler for the Zilog Z80 microprocessor and compatibles. It can be
+used to reverse engineer programs and operating systems for 1980's
+microcomputers using this processor architecture (for example Sinclar ZX80,
+ZX81, Spectrum, Galaksija and others).
+
+Generated assembly code can be assembled back with any of the following:
+
+zasm   - Z80 assembler by Günter Woigk
+z80asm - Available at http://savannah.nongnu.org/projects/z80asm/
+
+or the original Zilog Z80 assembler.
+
+z80dasm is based largely on dz80 3.0, written by Jan Panteltje (available
+at http://panteltje.com/panteltje/z80/index.html). z80dasm was extensively 
+tested, a lot of bugs were fixed and a more UNIX-like command line interface
+was added. See NEWS file for a summary of changes.
+
+Supported platforms
+===================
+
+In theory any UNIX-like operating system. z80dasm is developed on Debian
+GNU/Linux.
+
+
+Dependencies
+============
+
+None.
+
+
+Usage
+=====
+
+See man page or run "z80dasm -h".
+
+
+Installation
+============
+
+To build and install z80dasm: 
+
+ $ cd z80dasm-x.x.x
+
+ $ ./autogen.sh                         (only if building from CVS)
+
+ $ ./configure
+ $ make
+
+ $ make test 				(if you want to be sure it works)
+
+ $ make install                         (as root)
+
+
+License
+=======
+
+Copyright (C) 1994-2007 Jan Panteltje <panteltje@yahoo.com>
+Copyright (C) 2007-2012 Tomaz Solc <tomaz.solc@tablix.org>
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.

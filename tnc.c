@@ -1,0 +1,878 @@
+/* u21.c
+ * Program using z80emu to run the binary for the U21 TNC
+ * SIO Emulation is provided for the serial ports 
+ *
+ *
+ * This program is free, do whatever you want with it.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h> //memset
+#include <signal.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include "./z80emu/z80emu.h"
+#include "sio.h"
+#include "crc.h"
+
+#define Z80_CPU_SPEED           4195200   /* In Hz. */
+#define CYCLES_PER_STEP         (Z80_CPU_SPEED / 25)
+#define MAXIMUM_STRING_LENGTH   100
+
+#define RAM_SAVE_FILENAME	"tnc.ram"
+
+/* for udp socket */
+#define BUFLEN 2048	//Max length of buffer
+#define DEFAULT_PORT "10093"	//AXIP Port on BPQ node
+#define DEFAULT_TARGET "192.168.10.252" // BPQ SERVER
+
+/* Rom image is externally linked in. */
+extern unsigned char _binary_hk21rom_bin_start;
+extern unsigned char _binary_hk21rom_bin_end;
+extern unsigned char _binary_hk21rom_bin_size;
+
+/* The TNC has 32k of RAM and 32k of ROM.
+   Rom is addressed starting at 0 and Ram at 0x8000 */
+unsigned char *Rom = &_binary_hk21rom_bin_start;
+
+//unsigned char   Rom[1 << 15]; 
+unsigned char   Ram[1 << 15];
+
+int sock_out;
+int activity,activity2;
+unsigned char Ax25_Out[BUFLEN];
+unsigned char Ax25_In[BUFLEN];
+unsigned int  Ax25_In_Cnt, Ax25_Out_Cnt;
+unsigned char keybuf[16];
+unsigned char keyhead = 0;
+unsigned char keytail = 0;
+unsigned char flop,oldptt;
+unsigned char RxCharIn_Idx=0;
+unsigned char ax25rdy=0;
+unsigned char feedflag=0;
+unsigned char abortflag=0;
+unsigned char txundr_count;
+char service_port[]=DEFAULT_PORT;
+char target_addr[]=DEFAULT_TARGET;
+char *port;
+char *target;
+
+
+/* for test ax25 injection packet 1st byte is filler */
+//unsigned char TestAx25[22] = { 0x00, 0x86, 0xa2, 0x40, 0x40, 0x40, 0x40, 0x60, 0xae, 0x6e, 0x9a,
+//                                 0x82, 0x8e, 0x40, 0xe1, 0x03, 0xf0, 0x74, 0x65, 0x73, 0x74, 0x0d };
+
+/* for test ax25 injection packet 1st byte is filler */
+unsigned char TestAx25[18] = {0x00, 0x96, 0x8c, 0x6e, 0xa0, 0xa6, 0x9a, 0xe6, 0x96, 0x8c,
+                                0x6e, 0xa0, 0xa6, 0x9a, 0x61,  0x3f, 0x63, 0x1d};
+
+
+/* Declare struct vars for SIO channels */
+IC_SIO	sioa;
+IC_SIO	siob;
+Z80_STATE       state;
+
+void signal_callback_handler(int signum);
+int kbhit();
+static void     emulate (char *filename);
+void die(char *);
+char tobcd(unsigned int);
+
+int main (int argc, char *argv[])
+{
+
+	target=target_addr;
+	if(argc >= 2) target=argv[1];
+
+	port=service_port;
+	if(argc == 3) port=argv[2];
+
+	printf("Argc=%d Target=%s\n",argc,target);
+
+        // Register signal and signal handler
+        signal(SIGINT, signal_callback_handler);
+
+        /* turn off canonical mode and echo on terminal */
+        system("stty -icanon -echo");
+        setbuf(stdout, NULL); /* no buffering on stdout */
+
+/* select tnc eprom image to emulate */
+        emulate("hk21rom.bin"); 
+        return EXIT_SUCCESS;
+}
+
+static void emulate (char *filename)
+{
+        FILE            *file;
+        long            l;
+        unsigned char socket_active;
+        struct addrinfo hints, *servinfo;
+        struct sockaddr_in sin;
+        struct timeval tv;
+        fd_set readfds, master;
+
+        double		cycles;
+        double         total;
+        double		timer_int,sio_int;
+        unsigned int key;
+        int x;
+        unsigned short int mycrc; 
+
+        /* for setting tnc time from sys time */
+        char fakeday[]="day 1505270713";
+	time_t rawtime;
+        struct tm *timeinfo;
+
+        printf("Starting Emulation \"%s\"...\n", filename);
+
+/*        if ((file = fopen(filename, "rb")) == NULL) {
+
+                fprintf(stderr, "Can't open eprom image file!\n");
+                exit(EXIT_FAILURE);
+
+        }
+
+        fseek(file, 0, SEEK_END);
+        l = ftell(file);
+
+        fseek(file, 0, SEEK_SET);
+        fread(Rom, 1, l, file);
+
+        fclose(file);*/
+
+/* Now try and open ram image file from prev run */
+        if ((file = fopen(RAM_SAVE_FILENAME, "rb")) == NULL) {
+          for(x=0; x< 32768; x++) Ram[x] = 0;
+        }
+        else {
+          fseek(file, 0, SEEK_END);
+          l = ftell(file);
+
+          fseek(file, 0, SEEK_SET);
+          fread(Ram, 1, l, file);
+
+          fclose(file);
+        }
+
+        /* Patch for rom we can manually patch later, Needed? */
+        Rom[0x5032] = Rom[0x5041]; 
+        
+	/* Stuff NOPs to disable strange obfuscation of text */
+        for(x=0x47f7; x< 0x4802; x++) Rom[x] = 0; 
+        Rom[0x4803] = 0;
+
+	/* Throw some custom text into eprom for when user logs into bbs */
+        Rom[0x2dad] = 'H';
+        Rom[0x2dae] = 'a';
+        Rom[0x2daf] = 'p';
+        Rom[0x2db0] = 'p';
+        Rom[0x2db1] = 'y';
+        Rom[0x2db2] = ' ';
+        Rom[0x2db3] = 'i';
+        Rom[0x2db4] = 'f';
+        Rom[0x2db5] = ' ';
+        Rom[0x2db6] = 'y';
+        Rom[0x2db7] = 'o';
+        Rom[0x2db8] = 'u';
+        Rom[0x2db9] = 0;
+
+        Rom[0x2dba] = ' ';
+        Rom[0x2dbb] = 'P';
+        Rom[0x2dbc] = 'o';
+        Rom[0x2dbd] = 's';
+        Rom[0x2dbe] = 't';
+        Rom[0x2dbf] = ' ';
+        Rom[0x2dc0] = 'M';
+        Rom[0x2dc1] = 's';
+        Rom[0x2dc2] = 'g';
+
+
+        socket_active=1; /* assume connect will work */
+
+        memset(&hints, 0, sizeof hints);
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_DGRAM;
+
+        if ((x = getaddrinfo(target, port, &hints, &servinfo)) != 0) {
+          perror(gai_strerror(x));
+          die("Error setting target info\n");
+        }
+
+        /* here try to open an axip socket to the bpq server */
+        if ((sock_out = socket(servinfo->ai_family, servinfo->ai_socktype,
+                servinfo->ai_protocol)) == -1) 
+	{
+          printf("Err: UDP Socket Open\n");
+          socket_active=0;
+	}
+
+        
+        sin.sin_family=AF_INET;
+        sin.sin_port=htons(10094);
+	sin.sin_addr.s_addr=INADDR_ANY;
+	if ( bind(sock_out,(struct sockaddr *)&sin,sizeof(struct sockaddr_in)) == -1 ) die("Error: Bind\n"); 
+
+        if (connect(sock_out, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
+            close(sock_out);
+            perror("ax25udp: can't connect");
+            socket_active=0;
+        }
+
+        /* now setup select parms to perform non blocking io */
+        tv.tv_sec = 0;
+        tv.tv_usec = 1;
+
+        FD_ZERO(&master);
+        FD_ZERO(&readfds);
+
+        FD_SET(sock_out, &master);
+
+        activity = 0;
+	activity2 = 0;
+
+        /* copy initial daytime command into keybuf 
+           careful only 15 chars allowed! */
+        do
+	{
+          keybuf[keyhead] = fakeday[keyhead];
+          keyhead++;
+	}
+        while (keyhead < 14);
+        keybuf[keyhead++] = 0x0d; /* place cr */  
+ 
+        /* Begin Emulation */
+
+        SIO_Reset(&sioa);
+        SIO_Reset(&siob);
+
+        Z80Reset(&state);
+        total = timer_int = 0.0;
+        for ( ; ; ) {
+/* Enable for some emulator info 
+                printf("PC=%x cycles=%.0f\n",state.pc,total);
+                cycles = Z80Emulate(&state, 1);
+*/
+                cycles = Z80Emulate(&state, CYCLES_PER_STEP);
+                total += cycles;
+                
+                timer_int += cycles;
+                sio_int += cycles;
+
+/* Every so many cycles do a timer interrupt, highly inacurate but it
+doesn't matter since we don't rely on it anymore. This could be done
+better but for now it works */
+                if( timer_int > 2750200 )
+                {
+                    timer_int = 0;
+                    total += Z80Interrupt (&state, 0x10 );
+
+                    /* here update tnc time with our time */
+                    time(&rawtime);
+                    timeinfo = localtime (&rawtime);
+                    x= timeinfo->tm_sec;
+                    Ram[0x4f0a] = tobcd(x);
+                    x= timeinfo->tm_min;
+                    Ram[0x4f0b] = tobcd(x);
+                    x= timeinfo->tm_hour;
+                    Ram[0x4f0c] = tobcd(x);
+                    x= timeinfo->tm_mday;
+                    Ram[0x4f0d] = tobcd(x);
+                    x= timeinfo->tm_mon;
+                    Ram[0x4f0e] = tobcd(x+1);
+                    x= timeinfo->tm_year;
+                    x= x - ((x / 100) * 100);
+                    Ram[0x4f0f] = tobcd(x);
+                }
+
+/* These values may need to be adjusted depending on the speed of 
+the machine you will be emulating on. */
+#ifdef SPEED_PI
+                if( sio_int > 115004 ) /* on pi3 */
+#else
+                if( sio_int > 215004 ) /* on fast x86 */
+#endif
+                {
+                  flop = flop ^0x01;
+                  sio_int = 0;
+                 if(flop) {
+                  if(RxCharIn_Idx || ax25rdy) 
+                  {
+
+                   if(RxCharIn_Idx)
+                   {
+                     while(!state.iff1) total += Z80Emulate(&state, 2000 );
+                     total += Z80Interrupt (&state, siob.registers[2] | 0x0c);   // ax25 char read int
+                   }
+
+                   if(ax25rdy)
+                   {
+                     while(!state.iff1) total += Z80Emulate(&state, 2000 );
+                     total += Z80Interrupt (&state, siob.registers[2] | 0x0e); // eof int
+                   }
+
+                  }
+                  else 
+                  {
+		    if(txundr_count)
+                    {
+                      txundr_count--;
+                      if(!txundr_count)
+                      { 
+                        feedflag = 1; /* txunderrun we can send packet!*/
+                        if(socket_active) 
+                        {
+                          mycrc = compute_crc(Ax25_Out, Ax25_Out_Cnt);
+                          Ax25_Out[Ax25_Out_Cnt++] = mycrc & 0xFF;
+                          Ax25_Out[Ax25_Out_Cnt++] = mycrc >> 8;
+                          if ((x = sendto(sock_out, Ax25_Out, Ax25_Out_Cnt, 0,
+                            servinfo->ai_addr, servinfo->ai_addrlen)) == -1) 
+                          die("UDP Socket Xmit Error!\n");
+                        }
+                      }
+                    }
+
+                    if(feedflag || abortflag ) 
+                    {
+                      while(!state.iff1) total += Z80Emulate(&state, 2000 );
+                      total += Z80Interrupt (&state, siob.registers[2] | 0x0a); // ext stat int
+                    }
+                    else
+                    { 
+                      if(siob.registers[1] & 2)
+                      {
+//                        while(!state.iff1) total += Z80Emulate(&state, CYCLES_PER_STEP);
+                        total += Z80Interrupt (&state, siob.registers[2] );
+                      }
+                    }
+                  }
+                 } 
+                 else /* flip */
+                 {
+                  if(keyhead != keytail) {
+// This breaks inital autobaud!   if(state.iff1 && (siob.registers[1] & 0x18) )
+//                    {
+                      total += Z80Interrupt (&state, siob.registers[2] | 4);
+//                    }
+                  } else total += Z80Interrupt (&state, siob.registers[2] | 8 );
+                 }
+
+                /* here check if a socket is active but also check if we are in the middle of
+                   processing the previous socket by checking the RxCharIn_Idx & ax25rdy flags! */
+                if(socket_active && !RxCharIn_Idx && !ax25rdy) /* do we have a socket */
+                { 
+                  // Here we check if there is any incoming data on udp socket
+                  readfds = master; /* Copy because select etc changes it! */
+                  if (select(sock_out+1, &readfds, NULL, NULL, &tv) == -1)
+                  {
+                    perror("select");
+                    exit(4);
+                  }
+
+                  tv.tv_sec = 0;
+                  tv.tv_usec = 1;
+
+                  if (FD_ISSET(sock_out, &readfds))
+                  {
+                    if ((x = recv(sock_out, Ax25_In, sizeof Ax25_In, 0)) <= 0)
+                    {
+                      // got error or connection closed by client
+                      if (x == 0) 
+                      {
+                        // connection closed
+                        printf("selectserver: socket server hung up\n");
+                      } 
+                      else 
+                      {
+                        perror("recv");
+                      }
+                      close(sock_out); // bye!
+                      socket_active=0;
+                    }
+                    else /* we have data from socket */
+                    {
+                      activity2 = 3000;
+                      mycrc = compute_crc(Ax25_In, x-2);
+//                      printf("CRC=%2x RxCRC=%x%x\n",mycrc,Ax25_In[x-1],Ax25_In[x-2]);
+                      if( mycrc == ( (Ax25_In[x-1] << 8) + Ax25_In[x-2] ) ) /* crc check */
+                      {
+                        Ax25_In_Cnt = x-1;
+                        RxCharIn_Idx = 1; /* Let everyone know */
+                      }
+                    }
+                  } 
+                }
+                } /* end else flip */
+
+		// here check and handle console keyboard input
+		if(kbhit())
+                {
+                  activity2 = 100;
+                  key=getchar();
+                  if(key == 0x0a) key=0x0d;
+//                  if(key == '&') RxCharIn_Idx=1; // Trigger to inject test ax25 packet
+//                  else {
+                  // add to key buffer
+                  keybuf[keyhead] = key;
+                  keyhead++;
+                  keyhead &= 0x0f;
+//                  printf("got key %c\n",(char) key);
+//                  }
+                }
+
+                if(oldptt != (sioa.registers[5] & 2))
+                {
+                  oldptt = sioa.registers[5] & 2;
+//                  printf("ptt=%x\n",oldptt);
+                  if(oldptt == 2)
+                  {
+                    txundr_count=10; 
+                    Ax25_Out_Cnt=0;
+                  }
+                }
+
+/* Here check activity and if none sleep so we're not a cpu hog */
+                if(RxCharIn_Idx || ax25rdy || feedflag || abortflag ) activity = 0;
+		if(txundr_count ) activity = 0;
+                if(keyhead != keytail) activity = 0;
+
+                if(activity > 10000) usleep(10000);
+/*                else activity++; */
+/* Enable to stop even more cpu use*/
+                else
+                { 
+                  if(activity > 1) usleep(2000);
+
+		  if(activity2) activity2--;
+                  else activity++;
+                }
+
+                if (state.status & FLAG_STOP_EMULATION) 
+                  break;
+        }
+
+        printf("\n%.0f cycle(s) emulated.\n" 
+                "For a Z80 running at %.2fMHz, "
+                "that would be %d second(s) or %.2f hour(s).\n",
+                total,
+                Z80_CPU_SPEED / 1000000.0,
+                (int) (total / Z80_CPU_SPEED),
+                total / ((double) 3600 * Z80_CPU_SPEED));
+}
+
+/*************************************************************************
+  Here we emulate as best we can the I/O of the Toshiba TMPZ84C015 CPU
+  Integrated CPU/IO I/C. The following is the portmap of the i/o
+
+  Internal Halt Mode Setting Registers
+  This controls how the ic internal osc operates during certain cpu 
+  halt modes. Also watchdog is in hee. Probably can ignore since we are emulating.
+
+  Halt Mode Settings Register 0xF0 
+  Code writes an 0x7B Putting All devices in Powered up Run Mode.
+
+  Halt Mode Control Register 0XF1
+  Code writes an 0xB1 to disable watchdog timer since wdog enable bit in 0xF0 is off
+
+  Interrupt Priority Register 0xF4 Bits 1,2,0 as follows
+  HIGH  TO  LOWEST PRIORITY
+  CTC - SIO - PIO 0 0 0 
+  SIO - CTC - PIO 0 0 1 (THIS IS THE ONE THE CODE SELECTS)
+  CTC - PIO - SIO 0 1 0
+  PIO - SIO - CTC 0 1 1
+  PIO - CTC - SIO 1 0 0
+  SIO - PIO - CTC 1 0 1
+  
+  CTC Timer I/O Map
+  0x10 = Chan 0
+  0x11 = Chan 1
+  0x12 = Chan 2
+  0x13 = Chan 3
+
+  SIO Serial Device I/O Map 
+  0x18 = Chan A Data
+  0x19 = Chan A Command
+  0x1A = Chan B Data
+  0x1B = Chan B Command
+
+  PIO I/O Map
+  0x1C = Port A Data
+  0x1D = Port A Command
+  0x1E = Port B Data
+  0x1F = Port B Command
+
+*/
+
+int IO_in (int port)
+{
+  int x=0;
+  port &= 255;
+
+  switch (port)
+  {
+    case 0x10: // CTC Chan0
+      break;
+
+    case 0x11: // CTC Chan1
+      break;
+
+    case 0x12: // CTC Chan2
+      break;
+
+    case 0x13: // CTC Chan3
+      break;
+
+    case 0x18: // SIOA Data
+      x=0xff;
+      if(RxCharIn_Idx) 
+      {
+        activity = 0;
+        x = Ax25_In[RxCharIn_Idx-1];
+//printf("%x\n",x);
+        RxCharIn_Idx++;
+        if(RxCharIn_Idx == Ax25_In_Cnt+1) 
+        {
+          RxCharIn_Idx = 0;
+          ax25rdy=1;
+        }
+      }
+      break;
+
+    case 0x19: // SIOA Cmd
+      x = SIO_Cmd_Read( &sioa );
+      break;
+
+    case 0x1A: // SIOB Data
+      x=0xff;
+      if(keyhead != keytail)
+      {
+        x=keybuf[keytail];
+        keytail++;
+        keytail &= 0x0f;
+      }
+      break;
+
+    case 0x1B: // SIOB Cmd
+      x = SIO_Cmd_Read( &siob );
+      break;
+
+    case 0x1C: // PIOA Data
+      break;
+
+    case 0x1D: // PIOA Cmd
+      break;
+
+    case 0x1E: // PIOB Data
+      break;
+
+    case 0x1F: // PIOB Cmd
+      break;
+
+    default:  // All else do nothing
+      break;
+
+  }
+
+//    printf("IO In from port %x = %x:%x\n",port,x,state.pc);
+  return (x);
+}
+
+void IO_out (int port, int x)
+{
+  port &= 255;
+
+ // printf("IO out %x to port %x\n",x,port);
+
+  switch (port)
+  {
+    case 0x10: // CTC Chan0
+      break;
+
+    case 0x11: // CTC Chan1
+      break;
+
+    case 0x12: // CTC Chan2
+      break;
+
+    case 0x13: // CTC Chan3
+      break;
+
+    case 0x18: // SIOA Data
+      Ax25_Out[Ax25_Out_Cnt++] = x;
+      txundr_count=10; /* reset tx underrun */
+      break;
+
+    case 0x19: // SIOA Cmd
+      SIO_Cmd_Write( &sioa, x);
+      break;
+
+    case 0x1A: // SIOB Data
+      printf("%c",x);
+      activity = 0;
+      break;
+
+    case 0x1B: // SIOB Cmd
+      SIO_Cmd_Write( &siob, x);
+      break;
+
+    case 0x1C: // PIOA Data
+      break;
+
+    case 0x1D: // PIOA Cmd
+      break;
+
+    case 0x1E: // PIOB Data
+      break;
+
+    case 0x1F: // PIOB Cmd
+      break;
+
+    default:  // All else do nothing
+    break;
+
+  }
+
+
+}
+
+/* SIO functions are here to handle emulation of SIO Channels */
+
+/* Reset SIO registers and cmd ptr */
+void SIO_Reset( IC_SIO *sio )
+{
+  sio->state = 0; // Set state for cmd reg
+  sio->cmd_ptr = 0; // Set cmd ptr to reg 0
+  sio->registers[0] = 0; 
+}
+
+/* Handle Writes to SIO Command Port */
+void SIO_Cmd_Write( IC_SIO *sio, unsigned char x)
+{
+  if(sio->state) /* write to actual reg */
+  {
+//    if(abortflag && sio->cmd_ptr == 5 && !(x & 2)) 
+//      printf("PC=%x\n",state.pc);
+
+    sio->registers[sio->cmd_ptr] = x; 
+    sio->cmd_ptr = 0; /* after a write it sets back to 0 */
+    sio->state = 0; /* next state is command */
+  }
+  else /* set write register */
+  {
+    if(x & 0x20) feedflag=0;
+    if(x == 8)  abortflag=1;/* Abort Seq SDLC */
+    if(x == 0x18 ) /* handle special reset case */
+    {
+      sio->cmd_ptr = 0; /* after a write it sets back to 0 */
+      sio->state = 0; /* next state is command */
+    }
+    else {
+      if(!(x & 0x38)) 
+      {
+        sio->cmd_ptr = x & 0x07; /* lsb 3 bits select reg for next write/read */
+        sio->state = 1; /* flip state */
+      }
+    }
+  }
+
+}
+
+/* Handle Reads from SIO Command Port */
+int SIO_Cmd_Read( IC_SIO *sio )
+{
+
+int val = 0;
+
+  switch ( sio->cmd_ptr )
+  {
+    case 0: /* Reg Indicates the rx/tx buffer state & pins state */
+            /* MSB -> BRK/ABORT, UNDRRUN, CTS, SYNC/HUNT, DCD, TBUF_EMPTY
+               INT_PENDING, RX_CHAR_RDY <-LSB */
+      if(sio == &siob )
+      {
+        val = 0x2c; /* set CTS, DCD, TBUF_EMPTY always */
+        if(keyhead != keytail) val |=1; /* if keys in buffer set flag we have rx chars */  
+      }
+      else /* handle sioa */
+      {
+        val = val | 4; /* TBUF_EMPTY */
+        if( sio->registers[5] & 2 ) val |= 0x20; /* cts is wired to rts so it follows it */
+        if(abortflag) 
+        {
+          val |= 0x10; /* set Sync/Hunt */
+          val &= 0xFB; /* Clear TFBUF_EMPTY emulating crc going out in uart */
+          if(!(val & 0x20)) abortflag=0;
+        }
+        if( RxCharIn_Idx ) val |= 0x09; /* DCD & RX_CHAR_RDY */
+        if(feedflag) val |= 0x40; 
+      }
+      break;
+     
+    case 1: /* Reg Indicates error status and end of frame code */
+            /* MSB -> EOF_FRAM, FRAME_ERR, RX_OVRRUN, PARITY_ERROR
+               NONE, FRACTION, NONE, TX_EMPTY or always 1 in SYNC MODE */
+      if(sio == &siob )
+      {
+        val = 0x01	; /* TX Empty always! */
+      }
+      else /* chan a */
+      {
+        val= 0x01;
+        if(ax25rdy)
+        {
+          val |= 0x86; /* set eof detected and correct fraction bits! */
+          ax25rdy = 0;
+        }
+      }
+
+      break;
+
+    case 2: /* Returns int vector but only for port b but we do both */
+      if(sio == &siob )
+        {
+          val = sio->registers[2];
+        } else val=0; /* no int vec on chan a! */
+
+      break;
+
+    default:
+      break;
+
+  }
+
+  sio->state = 0;
+  sio->cmd_ptr = 0;
+//  sio->state = sio->state ^ 0x01; /* flip state */
+
+  return val;
+}
+
+/* Emulate CP/M bdos call 5 functions 2 (output character on screen) and 9
+ * (output $-terminated string to screen).
+ */
+
+void SystemCall (Z80_STATE *state)
+{
+        if (state->registers.byte[Z80_C] == 2)
+
+                printf("%c", state->registers.byte[Z80_E]);
+
+        else if (state->registers.byte[Z80_C] == 9) {
+
+                int     i, c;
+
+                for (i = state->registers.word[Z80_DE], c = 0; 
+                        Ram[i] != '$';
+                        i++) {
+
+                        printf("%c", Ram[i & 0xffff]);
+                        if (c++ > MAXIMUM_STRING_LENGTH) {
+
+                                fprintf(stderr,
+                                        "String to print is too long!\n");
+                                exit(EXIT_FAILURE);
+
+                        }
+
+                }
+
+        }
+}
+
+/* Memory Access Functions go here */
+
+unsigned int Memory_Read_Byte(unsigned int address)
+{
+  if(address > 0x7FFF) return Ram[address & 0x7fff];
+  else return Rom[address];
+}
+
+unsigned int Memory_Read_Word(unsigned int address)
+{
+  if(address > 0x7FFF) 
+    return Ram[address & 0x7fff] | ( Ram[ (address+1) & 0x7fff ] << 8 );
+  else
+    return Rom[address] | ( Rom[ address+1 ] << 8 );
+}
+
+void Memory_Write_Byte(unsigned int address, unsigned int data)
+{
+    if(address > 0x7FFF) Ram[address & 0x7fff] = data & 0xff;
+//  else Rom[address & 0x7fff] = data & 0xff;
+}
+
+void Memory_Write_Word(unsigned int address, unsigned int data)
+{
+  if(address > 0x7FFF) 
+  {
+        Ram[address & 0x7fff] = data & 0xff; 
+        if( ((address+1) & 0xffff) > 0x7fff)                                	
+        Ram[(address + 1) & 0x7fff] = data >> 8; 
+  }
+//  else
+//  {
+//        Rom[address & 0x7fff] = data & 0xff;                                 	
+//        Rom[(address + 1) & 0x7fff] = data >> 8; 
+//  }
+}
+
+// Define the function to be called when ctrl-c (SIGINT) signal is sent to process
+void signal_callback_handler(int signum)
+{
+   printf("Caught signal %d, saving ram to %s\n",signum,RAM_SAVE_FILENAME);
+   // Cleanup and close up stuff here
+
+   /* turn on canonical mode and echo on terminal */
+   system("stty icanon echo");
+
+   FILE* file= fopen(RAM_SAVE_FILENAME,"wb");
+   fwrite(Ram, 1, 32768, file);
+   fclose (file);
+
+   close (sock_out);
+   
+   // Terminate program
+   exit(signum);
+}
+
+int kbhit()
+{
+    struct timeval tv;
+    fd_set fds;
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
+    select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+    return FD_ISSET(STDIN_FILENO, &fds);
+}
+
+// Clean exit from error
+void die(char *s)
+{
+	perror(s);
+        system("stty icanon echo");
+        close (sock_out);
+	exit(1);
+}
+
+// Convert int to bcd 
+char tobcd(unsigned int val)
+{
+
+char result;
+
+  val &= 0xFF; // only doing 2 digits
+
+  result = val /10;
+  result <<= 4;
+  result |= val % 10;
+  return result;
+}
