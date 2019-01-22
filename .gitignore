@@ -1,0 +1,6 @@
+# Tell git to ignore these files
+*.o
+tnc
+tnc.ram
+
+
