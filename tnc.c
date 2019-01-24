@@ -1,4 +1,4 @@
-/* u21.c
+/* tnc.c
  * Program using z80emu to run the binary for the U21 TNC
  * SIO Emulation is provided for the serial ports 
  *
@@ -111,363 +111,374 @@ int main (int argc, char *argv[])
 
 static void emulate (char *filename)
 {
-        FILE            *file;
-        long            l;
-        unsigned char socket_active;
-        struct addrinfo hints, *servinfo;
-        struct sockaddr_in sin;
-        struct timeval tv;
-        fd_set readfds, master;
+FILE            *file;
+long            l;
+unsigned char socket_active;
+struct addrinfo hints, *servinfo;
+struct sockaddr_in sin;
+struct timeval tv;
+fd_set readfds, master;
 
-        double		cycles;
-        double         total;
-        double		timer_int,sio_int;
-        unsigned int key;
-        int x;
-        unsigned short int mycrc; 
+double		cycles;
+double         total;
+double		timer_int,sio_int;
+unsigned int key;
+int x;
+unsigned short int mycrc;
 
-        /* for setting tnc time from sys time */
-        char fakeday[]="day 1505270713";
-	time_t rawtime;
-        struct tm *timeinfo;
+/* for setting tnc time from sys time */
+ char fakeday[]="day 1505270713";
+time_t rawtime;
+struct tm *timeinfo;
 
-        printf("Starting Emulation \"%s\"...\n", filename);
+  printf("Starting Emulation \"%s\"...\n", filename);
 
-/*        if ((file = fopen(filename, "rb")) == NULL) {
+  /*if ((file = fopen(filename, "rb")) == NULL) {
+    fprintf(stderr, "Can't open eprom image file!\n");
+    exit(EXIT_FAILURE);
+  }
 
-                fprintf(stderr, "Can't open eprom image file!\n");
-                exit(EXIT_FAILURE);
+  fseek(file, 0, SEEK_END);
+  l = ftell(file);
 
-        }
+  fseek(file, 0, SEEK_SET);
+  fread(Rom, 1, l, file);
 
-        fseek(file, 0, SEEK_END);
-        l = ftell(file);
-
-        fseek(file, 0, SEEK_SET);
-        fread(Rom, 1, l, file);
-
-        fclose(file);*/
+  fclose(file);*/
 
 /* Now try and open ram image file from prev run */
-        if ((file = fopen(RAM_SAVE_FILENAME, "rb")) == NULL) {
-          for(x=0; x< 32768; x++) Ram[x] = 0;
-        }
-        else {
-          fseek(file, 0, SEEK_END);
-          l = ftell(file);
+  if ((file = fopen(RAM_SAVE_FILENAME, "rb")) == NULL)
+  {
+/* if file doesn't exist then clear memory for cold start */
+    for(x=0; x< 32768; x++) Ram[x] = 0;
+  }
+  else
+  {
+    fseek(file, 0, SEEK_END);
+    l = ftell(file);
 
-          fseek(file, 0, SEEK_SET);
-          fread(Ram, 1, l, file);
+    fseek(file, 0, SEEK_SET);
+    fread(Ram, 1, l, file);
 
-          fclose(file);
-        }
+    fclose(file);
+  }
 
-        /* Patch for rom we can manually patch later, Needed? */
-        Rom[0x5032] = Rom[0x5041]; 
+/* Patch for rom we can manually patch later, Needed? */
+  Rom[0x5032] = Rom[0x5041];
         
-	/* Stuff NOPs to disable strange obfuscation of text */
-        for(x=0x47f7; x< 0x4802; x++) Rom[x] = 0; 
-        Rom[0x4803] = 0;
+/* Stuff NOPs to disable strange obfuscation of text */
+  for(x=0x47f7; x< 0x4802; x++) Rom[x] = 0;
+  Rom[0x4803] = 0;
 
-	/* Throw some custom text into eprom for when user logs into bbs */
-        Rom[0x2dad] = 'H';
-        Rom[0x2dae] = 'a';
-        Rom[0x2daf] = 'p';
-        Rom[0x2db0] = 'p';
-        Rom[0x2db1] = 'y';
-        Rom[0x2db2] = ' ';
-        Rom[0x2db3] = 'i';
-        Rom[0x2db4] = 'f';
-        Rom[0x2db5] = ' ';
-        Rom[0x2db6] = 'y';
-        Rom[0x2db7] = 'o';
-        Rom[0x2db8] = 'u';
-        Rom[0x2db9] = 0;
+/* Throw some custom text into eprom for when user logs into bbs */
+  Rom[0x2dad] = 'H';
+  Rom[0x2dae] = 'a';
+  Rom[0x2daf] = 'p';
+  Rom[0x2db0] = 'p';
+  Rom[0x2db1] = 'y';
+  Rom[0x2db2] = ' ';
+  Rom[0x2db3] = 'i';
+  Rom[0x2db4] = 'f';
+  Rom[0x2db5] = ' ';
+  Rom[0x2db6] = 'y';
+  Rom[0x2db7] = 'o';
+  Rom[0x2db8] = 'u';
+  Rom[0x2db9] = 0;
 
-        Rom[0x2dba] = ' ';
-        Rom[0x2dbb] = 'P';
-        Rom[0x2dbc] = 'o';
-        Rom[0x2dbd] = 's';
-        Rom[0x2dbe] = 't';
-        Rom[0x2dbf] = ' ';
-        Rom[0x2dc0] = 'M';
-        Rom[0x2dc1] = 's';
-        Rom[0x2dc2] = 'g';
+  Rom[0x2dba] = ' ';
+  Rom[0x2dbb] = 'P';
+  Rom[0x2dbc] = 'o';
+  Rom[0x2dbd] = 's';
+  Rom[0x2dbe] = 't';
+  Rom[0x2dbf] = ' ';
+  Rom[0x2dc0] = 'M';
+  Rom[0x2dc1] = 's';
+  Rom[0x2dc2] = 'g';
 
 
-        socket_active=1; /* assume connect will work */
+/* set udp target info */
+  socket_active=1; /* assume connect will work */
 
-        memset(&hints, 0, sizeof hints);
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_DGRAM;
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_DGRAM;
 
-        if ((x = getaddrinfo(target, port, &hints, &servinfo)) != 0) {
-          perror(gai_strerror(x));
-          die("Error setting target info\n");
-        }
+  if ((x = getaddrinfo(target, port, &hints, &servinfo)) != 0) {
+    perror(gai_strerror(x));
+    die("Error setting target info\n");
+  }
 
-        /* here try to open an axip socket to the bpq server */
-        if ((sock_out = socket(servinfo->ai_family, servinfo->ai_socktype,
-                servinfo->ai_protocol)) == -1) 
-	{
-          printf("Err: UDP Socket Open\n");
-          socket_active=0;
+/* here try to open an axip socket to the bpq server */
+  if ((sock_out = socket(servinfo->ai_family, servinfo->ai_socktype,
+      servinfo->ai_protocol)) == -1)
+  {
+    printf("Err: UDP Socket Open\n");
+    socket_active=0;
 	}
-
         
-        sin.sin_family=AF_INET;
-        sin.sin_port=htons(10094);
+  sin.sin_family=AF_INET;
+  sin.sin_port=htons(10094);
 	sin.sin_addr.s_addr=INADDR_ANY;
-	if ( bind(sock_out,(struct sockaddr *)&sin,sizeof(struct sockaddr_in)) == -1 ) die("Error: Bind\n"); 
 
-        if (connect(sock_out, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
-            close(sock_out);
-            perror("ax25udp: can't connect");
-            socket_active=0;
-        }
+	if ( bind(sock_out,(struct sockaddr *)&sin,sizeof(struct sockaddr_in)) == -1 )
+    die("Error: Bind\n");
 
-        /* now setup select parms to perform non blocking io */
-        tv.tv_sec = 0;
-        tv.tv_usec = 1;
+  if (connect(sock_out, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
+      close(sock_out);
+      perror("ax25udp: can't connect");
+      socket_active=0;
+  }
 
-        FD_ZERO(&master);
-        FD_ZERO(&readfds);
+/* Socket is connected, now setup select parms to perform non blocking io */
+  tv.tv_sec = 0;
+  tv.tv_usec = 1;
 
-        FD_SET(sock_out, &master);
+  FD_ZERO(&master);
+  FD_ZERO(&readfds);
+  FD_SET(sock_out, &master);
 
-        activity = 0;
-	activity2 = 0;
+/* Init some activity timers that control sleep */
+  activity = 0;
+  activity2 = 0;
 
-        /* copy initial daytime command into keybuf 
-           careful only 15 chars allowed! */
-        do
-	{
-          keybuf[keyhead] = fakeday[keyhead];
-          keyhead++;
-	}
-        while (keyhead < 14);
-        keybuf[keyhead++] = 0x0d; /* place cr */  
+/* copy initial daytime command into keybuf careful only 15 chars allowed! */
+  do
+  {
+    keybuf[keyhead] = fakeday[keyhead];
+    keyhead++;
+  }
+  while (keyhead < 14);
+
+  keybuf[keyhead++] = 0x0d; /* place cr */
  
-        /* Begin Emulation */
+/* This is the beginning of the emulation loop */
 
-        SIO_Reset(&sioa);
-        SIO_Reset(&siob);
+  SIO_Reset(&sioa); /* Reset Emulated Serial i/o a */
+  SIO_Reset(&siob); /* Reset Emulated Serial i/o b */
 
-        Z80Reset(&state);
-        total = timer_int = 0.0;
+  Z80Reset(&state);
+  total = timer_int = 0.0;
 
 	sio_int = 0;
 
-        for ( ; ; ) {
-/* Enable for some emulator info 
-                printf("PC=%x cycles=%.0f\n",state.pc,total);
-                cycles = Z80Emulate(&state, 1);
-*/
-                cycles = Z80Emulate(&state, CYCLES_PER_STEP);
-                total += cycles;
-                
-                timer_int += cycles;
-                sio_int += cycles;
+  for ( ; ; ) /* Forever */
+  {
+#ifdef DEBUG
+    printf("PC=%x cycles=%.0f\n",state.pc,total);
+    cycles = Z80Emulate(&state, 1);
+#endif
+    cycles = Z80Emulate(&state, CYCLES_PER_STEP);
+    total += cycles;
+    timer_int += cycles;
+    sio_int += cycles;
 
 /* Every so many cycles do a timer interrupt, highly inacurate but it
 doesn't matter since we don't rely on it anymore. This could be done
 better but for now it works */
-                if( timer_int > 2750200 )
-                {
-                    timer_int = 0;
-                    total += Z80Interrupt (&state, 0x10 );
+    if( timer_int > 2750200 )
+    {
+      timer_int = 0;
+      total += Z80Interrupt (&state, 0x10 );
 
-                    /* here update tnc time with our time */
-                    time(&rawtime);
-                    timeinfo = localtime (&rawtime);
-                    x= timeinfo->tm_sec;
-                    Ram[0x4f0a] = tobcd(x);
-                    x= timeinfo->tm_min;
-                    Ram[0x4f0b] = tobcd(x);
-                    x= timeinfo->tm_hour;
-                    Ram[0x4f0c] = tobcd(x);
-                    x= timeinfo->tm_mday;
-                    Ram[0x4f0d] = tobcd(x);
-                    x= timeinfo->tm_mon;
-                    Ram[0x4f0e] = tobcd(x+1);
-                    x= timeinfo->tm_year;
-                    x= x - ((x / 100) * 100);
-                    Ram[0x4f0f] = tobcd(x);
-                }
+      /* here update tnc time with our time */
+      time(&rawtime);
+      timeinfo = localtime (&rawtime);
+      x= timeinfo->tm_sec;
+      Ram[0x4f0a] = tobcd(x);
+      x= timeinfo->tm_min;
+      Ram[0x4f0b] = tobcd(x);
+      x= timeinfo->tm_hour;
+      Ram[0x4f0c] = tobcd(x);
+      x= timeinfo->tm_mday;
+      Ram[0x4f0d] = tobcd(x);
+      x= timeinfo->tm_mon;
+      Ram[0x4f0e] = tobcd(x+1);
+      x= timeinfo->tm_year;
+      x= x - ((x / 100) * 100);
+      Ram[0x4f0f] = tobcd(x);
+    }
 
 /* These values may need to be adjusted depending on the speed of 
 the machine you will be emulating on. */
 #ifdef SPEED_PI
-                if( sio_int > 115004 ) /* on pi3 */
+    if( sio_int > 115004 ) /* on pi3 */
 #else
-                if( sio_int > 215004 ) /* on fast x86 */
+    if( sio_int > 215004 ) /* on fast x86 */
 #endif
-                {
-                  flop = flop ^0x01;
-                  sio_int = 0;
-                 if(flop) {
-                  if(RxCharIn_Idx || ax25rdy) 
-                  {
+    {
+      flop = flop ^0x01;
+      sio_int = 0;
+      if(flop)
+      {
 
-                   if(RxCharIn_Idx)
-                   {
-                     while(!state.iff1) total += Z80Emulate(&state, 2000 );
-                     total += Z80Interrupt (&state, siob.registers[2] | 0x0c);   // ax25 char read int
-                   }
+        if(RxCharIn_Idx || ax25rdy)
+        {
+          if(RxCharIn_Idx)
+          {
+            while(!state.iff1) total += Z80Emulate(&state, 2000 );
+            total += Z80Interrupt (&state, siob.registers[2] | 0x0c);   // ax25 char read int
+          }
 
-                   if(ax25rdy)
-                   {
-                     while(!state.iff1) total += Z80Emulate(&state, 2000 );
-                     total += Z80Interrupt (&state, siob.registers[2] | 0x0e); // eof int
-                   }
+          if(ax25rdy)
+          {
+            while(!state.iff1) total += Z80Emulate(&state, 2000 );
+            total += Z80Interrupt (&state, siob.registers[2] | 0x0e); // eof int
+          }
+        }
+        else
+        {
+          if(txundr_count)
+          {
+            txundr_count--;
+            if(!txundr_count)
+            {
+              feedflag = 1; /* txunderrun we can send packet!*/
+              if(socket_active)
+              {
+                mycrc = compute_crc(Ax25_Out, Ax25_Out_Cnt);
+                Ax25_Out[Ax25_Out_Cnt++] = mycrc & 0xFF;
+                Ax25_Out[Ax25_Out_Cnt++] = mycrc >> 8;
+                if ((x = sendto(sock_out, Ax25_Out, Ax25_Out_Cnt, 0,
+                    servinfo->ai_addr, servinfo->ai_addrlen)) == -1)
+                  die("UDP Socket Xmit Error!\n");
+              }
+            }
+          }
 
-                  }
-                  else 
-                  {
-		    if(txundr_count)
-                    {
-                      txundr_count--;
-                      if(!txundr_count)
-                      { 
-                        feedflag = 1; /* txunderrun we can send packet!*/
-                        if(socket_active) 
-                        {
-                          mycrc = compute_crc(Ax25_Out, Ax25_Out_Cnt);
-                          Ax25_Out[Ax25_Out_Cnt++] = mycrc & 0xFF;
-                          Ax25_Out[Ax25_Out_Cnt++] = mycrc >> 8;
-                          if ((x = sendto(sock_out, Ax25_Out, Ax25_Out_Cnt, 0,
-                            servinfo->ai_addr, servinfo->ai_addrlen)) == -1) 
-                          die("UDP Socket Xmit Error!\n");
-                        }
-                      }
-                    }
-
-                    if(feedflag || abortflag ) 
-                    {
-                      while(!state.iff1) total += Z80Emulate(&state, 2000 );
-                      total += Z80Interrupt (&state, siob.registers[2] | 0x0a); // ext stat int
-                    }
-                    else
-                    { 
-                      if(siob.registers[1] & 2)
-                      {
-//                        while(!state.iff1) total += Z80Emulate(&state, CYCLES_PER_STEP);
-                        total += Z80Interrupt (&state, siob.registers[2] );
-                      }
-                    }
-                  }
-                 } 
-                 else /* flip */
-                 {
-                  if(keyhead != keytail) {
+          if(feedflag || abortflag )
+          {
+            while(!state.iff1) total += Z80Emulate(&state, 2000 );
+            total += Z80Interrupt (&state, siob.registers[2] | 0x0a); // ext stat int
+          }
+          else
+          {
+            if(siob.registers[1] & 2)
+            {
+          // while(!state.iff1) total += Z80Emulate(&state, CYCLES_PER_STEP);
+              total += Z80Interrupt (&state, siob.registers[2] );
+            }
+          }
+        }
+      }
+      else /* flip */
+      {
+        if(keyhead != keytail)
+        {
 // This breaks inital autobaud!   if(state.iff1 && (siob.registers[1] & 0x18) )
-//                    {
-                      total += Z80Interrupt (&state, siob.registers[2] | 4);
-//                    }
-                  } else total += Z80Interrupt (&state, siob.registers[2] | 8 );
-                 }
+//      {
+          total += Z80Interrupt (&state, siob.registers[2] | 4);
+//      }
+        } 
+        else total += Z80Interrupt (&state, siob.registers[2] | 8 );
+      }
 
-                /* here check if a socket is active but also check if we are in the middle of
-                   processing the previous socket by checking the RxCharIn_Idx & ax25rdy flags! */
-                if(socket_active && !RxCharIn_Idx && !ax25rdy) /* do we have a socket */
-                { 
-                  // Here we check if there is any incoming data on udp socket
-                  readfds = master; /* Copy because select etc changes it! */
-                  if (select(sock_out+1, &readfds, NULL, NULL, &tv) == -1)
-                  {
-                    perror("select");
-                    exit(4);
-                  }
+/* here check if a socket is active but also check if we are in the middle of
+    processing the previous socket by checking the RxCharIn_Idx & ax25rdy flags! */
+      if(socket_active && !RxCharIn_Idx && !ax25rdy) /* do we have a socket */
+      { 
+/* Here we check if there is any incoming data on udp socket
+        readfds = master; /* Copy because select etc changes it! */
+        if (select(sock_out+1, &readfds, NULL, NULL, &tv) == -1)
+        {
+          perror("select");
+          exit(4);
+        }
 
-                  tv.tv_sec = 0;
-                  tv.tv_usec = 1;
+        tv.tv_sec = 0;
+        tv.tv_usec = 1;
 
-                  if (FD_ISSET(sock_out, &readfds))
-                  {
-                    if ((x = recv(sock_out, Ax25_In, sizeof Ax25_In, 0)) <= 0)
-                    {
-                      // got error or connection closed by client
-                      if (x == 0) 
-                      {
-                        // connection closed
-                        printf("selectserver: socket server hung up\n");
-                      } 
-                      else 
-                      {
-                        perror("recv");
-                      }
-                      close(sock_out); // bye!
-                      socket_active=0;
-                    }
-                    else /* we have data from socket */
-                    {
-                      activity2 = 3000;
-                      mycrc = compute_crc(Ax25_In, x-2);
-//                      printf("CRC=%2x RxCRC=%x%x\n",mycrc,Ax25_In[x-1],Ax25_In[x-2]);
-                      if( mycrc == ( (Ax25_In[x-1] << 8) + Ax25_In[x-2] ) ) /* crc check */
-                      {
-                        Ax25_In_Cnt = x-1;
-                        RxCharIn_Idx = 1; /* Let everyone know */
-                      }
-                    }
-                  } 
-                }
-                } /* end else flip */
+        if (FD_ISSET(sock_out, &readfds))
+        {
+          if ((x = recv(sock_out, Ax25_In, sizeof Ax25_In, 0)) <= 0)
+          {
+            /* here we got error or connection closed by client */
+
+            /* Connection Closed */
+            if (x == 0) printf("selectserver: socket server hung up.\n");
+            else perror("ax25 recv error."); /* else an error */
+
+            close(sock_out); // bye!
+            socket_active=0;
+          }
+          else /* we have data from socket */
+          {
+            activity2 = 3000; /* we have activity so set counter for sleep algo */
+            mycrc = compute_crc(Ax25_In, x-2);
+  #ifdef DEBUG
+            printf("CRC=%2x RxCRC=%x%x\n",mycrc,Ax25_In[x-1],Ax25_In[x-2]);
+  #endif
+            if( mycrc == ( (Ax25_In[x-1] << 8) + Ax25_In[x-2] ) ) /* crc check */
+            {
+              Ax25_In_Cnt = x-1;
+              RxCharIn_Idx = 1; /* Let everyone know */
+            }
+          }
+        }
+      } /* end if socket active */
+    } /* end if sio int */
 
 		// here check and handle console keyboard input
 		if(kbhit())
-                {
-                  activity2 = 100;
-                  key=getchar();
-                  if(key == 0x0a) key=0x0d;
-//                  if(key == '&') RxCharIn_Idx=1; // Trigger to inject test ax25 packet
-//                  else {
-                  // add to key buffer
-                  keybuf[keyhead] = key;
-                  keyhead++;
-                  keyhead &= 0x0f;
-//                  printf("got key %c\n",(char) key);
-//                  }
-                }
+    {
+      activity2 = 100;
+      key=getchar();
+      if(key == 0x0a) key=0x0d;
+#ifdef DEBUG
+      if(key == '&') RxCharIn_Idx=1; // Trigger to inject test ax25 packet
+      else
+      {
+#endif
+        // add to key buffer
+        keybuf[keyhead] = key;
+        keyhead++;
+        keyhead &= 0x0f;
+#ifdef DEBUG
+        printf("got key %c\n",(char) key);
+      }
+#endif
+    }
 
-                if(oldptt != (sioa.registers[5] & 2))
-                {
-                  oldptt = sioa.registers[5] & 2;
-//                  printf("ptt=%x\n",oldptt);
-                  if(oldptt == 2)
-                  {
-                    txundr_count=10; 
-                    Ax25_Out_Cnt=0;
-                  }
-                }
+    if(oldptt != (sioa.registers[5] & 2))
+    {
+      oldptt = sioa.registers[5] & 2;
+#ifdef DEBUG
+      printf("ptt=%x\n",oldptt);
+#endif
+      if(oldptt == 2)
+      {
+        txundr_count=10; 
+        Ax25_Out_Cnt=0;
+      }
+    }
 
 /* Here check activity and if none sleep so we're not a cpu hog */
-                if(RxCharIn_Idx || ax25rdy || feedflag || abortflag ) activity = 0;
-		if(txundr_count ) activity = 0;
-                if(keyhead != keytail) activity = 0;
+    if(RxCharIn_Idx || ax25rdy || feedflag || abortflag ) activity = 0;
+    if(txundr_count ) activity = 0;
+    if(keyhead != keytail) activity = 0;
 
-                if(activity > 10000) usleep(10000);
+    if(activity > 10000) usleep(10000);
 /*                else activity++; */
 /* Enable to stop even more cpu use*/
-                else
-                { 
-                  if(activity > 1) usleep(2000);
+     else
+     { 
+       if(activity > 1) usleep(2000);
+       if(activity2) activity2--;
+         else activity++;
+    }
 
-		  if(activity2) activity2--;
-                  else activity++;
-                }
+    if (state.status & FLAG_STOP_EMULATION) 
+      break;
+  } /* End infinite loop */
 
-                if (state.status & FLAG_STOP_EMULATION) 
-                  break;
-        }
-
-        printf("\n%.0f cycle(s) emulated.\n" 
-                "For a Z80 running at %.2fMHz, "
-                "that would be %d second(s) or %.2f hour(s).\n",
-                total,
-                Z80_CPU_SPEED / 1000000.0,
-                (int) (total / Z80_CPU_SPEED),
-                total / ((double) 3600 * Z80_CPU_SPEED));
+#ifdef DEBUG
+  printf("\n%.0f cycle(s) emulated.\n" 
+  "For a Z80 running at %.2fMHz, "
+  "that would be %d second(s) or %.2f hour(s).\n",
+  total,
+  Z80_CPU_SPEED / 1000000.0,
+  (int) (total / Z80_CPU_SPEED),
+  total / ((double) 3600 * Z80_CPU_SPEED));
+#endif
 }
 
 /*************************************************************************
@@ -763,30 +774,25 @@ int val = 0;
 
 void SystemCall (Z80_STATE *state)
 {
-        if (state->registers.byte[Z80_C] == 2)
+  if (state->registers.byte[Z80_C] == 2)
+    printf("%c", state->registers.byte[Z80_E]);
 
-                printf("%c", state->registers.byte[Z80_E]);
+  else if (state->registers.byte[Z80_C] == 9)
+  {
+int     i, c;
 
-        else if (state->registers.byte[Z80_C] == 9) {
-
-                int     i, c;
-
-                for (i = state->registers.word[Z80_DE], c = 0; 
-                        Ram[i] != '$';
-                        i++) {
-
-                        printf("%c", Ram[i & 0xffff]);
-                        if (c++ > MAXIMUM_STRING_LENGTH) {
-
-                                fprintf(stderr,
-                                        "String to print is too long!\n");
-                                exit(EXIT_FAILURE);
-
-                        }
-
-                }
-
-        }
+    for (i = state->registers.word[Z80_DE], c = 0; 
+            Ram[i] != '$';
+            i++)
+    {
+      printf("%c", Ram[i & 0xffff]);
+      if (c++ > MAXIMUM_STRING_LENGTH)
+      {
+        fprintf(stderr, "String to print is too long!\n");
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
 }
 
 /* Memory Access Functions go here */
@@ -807,7 +813,7 @@ unsigned int Memory_Read_Word(unsigned int address)
 
 void Memory_Write_Byte(unsigned int address, unsigned int data)
 {
-    if(address > 0x7FFF) Ram[address & 0x7fff] = data & 0xff;
+  if(address > 0x7FFF) Ram[address & 0x7fff] = data & 0xff;
 //  else Rom[address & 0x7fff] = data & 0xff;
 }
 
@@ -815,9 +821,9 @@ void Memory_Write_Word(unsigned int address, unsigned int data)
 {
   if(address > 0x7FFF) 
   {
-        Ram[address & 0x7fff] = data & 0xff; 
-        if( ((address+1) & 0xffff) > 0x7fff)                                	
-        Ram[(address + 1) & 0x7fff] = data >> 8; 
+    Ram[address & 0x7fff] = data & 0xff; 
+    if( ((address+1) & 0xffff) > 0x7fff)                                	
+    Ram[(address + 1) & 0x7fff] = data >> 8; 
   }
 //  else
 //  {
@@ -847,22 +853,22 @@ void signal_callback_handler(int signum)
 
 int kbhit()
 {
-    struct timeval tv;
-    fd_set fds;
-    tv.tv_sec = 0;
-    tv.tv_usec = 0;
-    FD_ZERO(&fds);
-    FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
-    select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
-    return FD_ISSET(STDIN_FILENO, &fds);
+  struct timeval tv;
+  fd_set fds;
+  tv.tv_sec = 0;
+  tv.tv_usec = 0;
+  FD_ZERO(&fds);
+  FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
+  select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+  return FD_ISSET(STDIN_FILENO, &fds);
 }
 
 // Clean exit from error
 void die(char *s)
 {
 	perror(s);
-        system("stty icanon echo");
-        close (sock_out);
+  system("stty icanon echo");
+  close (sock_out);
 	exit(1);
 }
 

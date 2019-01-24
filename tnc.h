@@ -4,11 +4,12 @@
  * This program is free, do whatever you want with it.
  */
 
-#ifndef __U21_INCLUDED__
+#ifndef __TNC_INCLUDED__
 
 /* Additional Z80_STATE status flag to request emulation termination. */
                                 
 #define FLAG_STOP_EMULATION     (1 << 31)
+//#define DEBUG 1
 
 extern unsigned char *Rom;
 
@@ -23,6 +24,6 @@ extern unsigned int Memory_Read_Word(unsigned int);
 extern void Memory_Write_Byte(unsigned int, unsigned int);
 extern void Memory_Write_Word(unsigned int, unsigned int);
 
-#define __U21_INCLUDED__
+#define __TNC_INCLUDED__
 
 #endif
