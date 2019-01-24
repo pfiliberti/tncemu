@@ -376,7 +376,7 @@ the machine you will be emulating on. */
     processing the previous socket by checking the RxCharIn_Idx & ax25rdy flags! */
       if(socket_active && !RxCharIn_Idx && !ax25rdy) /* do we have a socket */
       { 
-/* Here we check if there is any incoming data on udp socket
+/* Here we check if there is any incoming data on udp socket */
         readfds = master; /* Copy because select etc changes it! */
         if (select(sock_out+1, &readfds, NULL, NULL, &tv) == -1)
         {
