@@ -217,7 +217,7 @@ struct tm *timeinfo;
 	}
         
   sin.sin_family=AF_INET;
-  sin.sin_port=htons(10094);
+  sin.sin_port=htons(10093);
 	sin.sin_addr.s_addr=INADDR_ANY;
 
 	if ( bind(sock_out,(struct sockaddr *)&sin,sizeof(struct sockaddr_in)) == -1 )
