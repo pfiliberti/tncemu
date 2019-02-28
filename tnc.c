@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <errno.h>
 #include <string.h> //memset
 #include <signal.h>
@@ -32,7 +33,7 @@
 /* for udp socket */
 #define BUFLEN 2048	//Max length of buffer
 #define DEFAULT_PORT "10093"	//AXIP Port on BPQ node
-#define DEFAULT_TARGET "192.168.10.252" // BPQ SERVER
+#define DEFAULT_HOST "192.168.10.252" // BPQ SERVER
 
 /* Rom image is externally linked in. */
 extern unsigned char _binary_hk21rom_bin_start;
@@ -61,9 +62,9 @@ unsigned char feedflag=0;
 unsigned char abortflag=0;
 unsigned char txundr_count;
 char service_port[]=DEFAULT_PORT;
-char target_addr[]=DEFAULT_TARGET;
+char host_addr[]=DEFAULT_HOST;
 char *port;
-char *target;
+char *target_host;
 
 
 /* for test ax25 injection packet 1st byte is filler */
@@ -85,28 +86,52 @@ int kbhit();
 static void     emulate (char *filename);
 void die(char *);
 char tobcd(unsigned int);
+void print_usage(void);
+void print_info(void);
+
+/***************************************************************************************/
 
 int main (int argc, char *argv[])
 {
+int option = 0;
 
-	target=target_addr;
-	if(argc >= 2) target=argv[1];
 
+/* Set Default for target host and port */
+	target_host=host_addr;
 	port=service_port;
-	if(argc == 3) port=argv[2];
 
-	printf("Argc=%d Target=%s\n",argc,target);
+/* Parse command line options */
+  while ((option = getopt(argc, argv,"ht:p:")) != -1) {
+    switch (option) 
+    {
+      case 't' : target_host = optarg; 
+        break;
+      case 'p' : port = optarg;
+        break;
+      case 'h' : print_info();
+        die("Exiting...");
+        break;
+      default: print_usage(); 
+        die("Exiting...");
+        break;
+    }
+  }
 
-        // Register signal and signal handler
-        signal(SIGINT, signal_callback_handler);
+  printf("Connecting with Target Host %s at port %s\n",target_host,port);
 
-        /* turn off canonical mode and echo on terminal */
-        system("stty -icanon -echo");
-        setbuf(stdout, NULL); /* no buffering on stdout */
+  /* Register signal and signal handler */
+  signal(SIGINT, signal_callback_handler);
 
-/* select tnc eprom image to emulate */
-        emulate("hk21rom.bin"); 
-        return EXIT_SUCCESS;
+  /* turn off canonical mode and echo on terminal */
+  system("stty -icanon -echo");
+  setbuf(stdout, NULL); /* no buffering on stdout */
+
+  /* select tnc eprom image to emulate */
+  /* deprecated now using internally linked image however in future */
+  /* modify to overwrite internal rom image with file if requested for experimentation */  
+  emulate("hk21rom.bin"); 
+  return EXIT_SUCCESS;
+
 }
 
 static void emulate (char *filename)
@@ -203,9 +228,9 @@ struct tm *timeinfo;
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_DGRAM;
 
-  if ((x = getaddrinfo(target, port, &hints, &servinfo)) != 0) {
+  if ((x = getaddrinfo(target_host, port, &hints, &servinfo)) != 0) {
     perror(gai_strerror(x));
-    die("Error setting target info\n");
+    die("Error setting target_host info\n");
   }
 
 /* here try to open an axip socket to the bpq server */
@@ -884,4 +909,18 @@ char result;
   result <<= 4;
   result |= val % 10;
   return result;
+}
+
+void print_usage(void)
+{
+  printf("Usage: tnc [-t host] [-p port]\n");
+  printf("Try tnc -h for more information.\n");
+}
+
+void print_info(void)
+{
+  printf("Tnc Emulator Version %s\n",VERSION_INFO);
+  printf("Command line Parameters:\n");
+  printf("-t target ax25 host ip address or dns name\n");
+  printf("-p targt port (default 10093)\n");
 }
