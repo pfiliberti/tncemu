@@ -1,7 +1,7 @@
 /******************************************************************************/
 /* Kiss Protocol Function Header                                              */
 /******************************************************************************/
-#ifndef __TNC_INCLUDED__
+#ifndef __KISS_INCLUDED__
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -66,6 +66,6 @@ void kiss_pack(unsigned char *kiss_block, unsigned char *ax25_block, int *size);
 */
 
 
-#define __TNC_INCLUDED__
+#define __KISS_INCLUDED__
 
 #endif

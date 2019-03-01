@@ -21,7 +21,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include "./z80emu/z80emu.h"
-#include "tnc.h"
 #include "sio.h"
 #include "crc.h"
 #include "kiss.h"
@@ -87,7 +86,7 @@ unsigned char TestAx25[18] = {0x00, 0x96, 0x8c, 0x6e, 0xa0, 0xa6, 0x9a, 0xe6, 0x
    3 = TXTAIL
 */
 #define NUM_KISS_PARMS 4
-unsigned char ax25_parms[NUM_KISS_PARMS] = {0,0,0,0};
+unsigned char ax25_parms[NUM_KISS_PARMS] = {0,63,2,3}; /* Common defaults */
 unsigned int ax25_parm_location[NUM_KISS_PARMS] = {0x3FDA, 0x4033, 0x4035, 0x3FD7};
 
 /* Declare struct vars for SIO channels */
