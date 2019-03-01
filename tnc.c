@@ -135,7 +135,7 @@ int option = 0;
 
   printf("Connecting with Target Host %s at port %s\nProtocol: ",target_host,port);
   if(use_kiss) printf("KISS\n");
-  else printf("AX25/n");
+  else printf("AX25\n");
 
   /* Register signal and signal handler */
   signal(SIGINT, signal_callback_handler);
