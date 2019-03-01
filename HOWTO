@@ -42,7 +42,7 @@ bpq to connect on 10094.
 
 
 KEYBOARD and TNC OPERATION NOTES
--------------------
+--------------------------------
 Normally on a standard tnc, the setting COMMAND that sets the key 
 that returns you to the tnc command prompt is $03 CTRL-C. However
 CTRL-C is trapped and used to exit the tnc emulator so we have
@@ -68,3 +68,26 @@ the ax25 name of the bpq server.
 C AA7EZ-7 
 
 
+KISS PROTOCOL
+-------------
+The latest version of the emulator supports connecting to a kiss
+protocol server such as a soundmodem device like direwolf etc.
+The -k parameter on the command line will switch the emulator
+into this mode and you must specify as usual the target host
+ip and port for the kiss port. The protocol will establish 
+a TCP socket instead of a UDP datagram connection to the KISS
+server and start to communicate AX25 packets in KISS mode.
+
+When in this mode certain AX25 paramters that can be changed
+at the command line level such as slottime, persist and 
+axhang will be sent to the kiss server to affect the
+same properties on the remote side. Txdelay is also one
+of these but is currently having issues and will be fixed
+at a future date.
+
+Using the kiss protocol and a soundmodem the emulator will
+behave as the original physical TNC once did, minus some
+timing differences but moslty will work ok. Experiment
+with this and any feedback is appreciated.
+
+73 de KF7PSM

@@ -21,8 +21,10 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include "./z80emu/z80emu.h"
+#include "tnc.h"
 #include "sio.h"
 #include "crc.h"
+#include "kiss.h"
 
 #define Z80_CPU_SPEED           4195200   /* In Hz. */
 #define CYCLES_PER_STEP         (Z80_CPU_SPEED / 25)
@@ -49,6 +51,7 @@ unsigned char   Ram[1 << 15];
 
 int sock_out;
 int activity,activity2;
+unsigned char Socket_Data_In[BUFLEN];
 unsigned char Ax25_Out[BUFLEN];
 unsigned char Ax25_In[BUFLEN];
 unsigned int  Ax25_In_Cnt, Ax25_Out_Cnt;
@@ -61,6 +64,7 @@ unsigned char ax25rdy=0;
 unsigned char feedflag=0;
 unsigned char abortflag=0;
 unsigned char txundr_count;
+unsigned char use_kiss=0;
 char service_port[]=DEFAULT_PORT;
 char host_addr[]=DEFAULT_HOST;
 char *port;
@@ -101,9 +105,11 @@ int option = 0;
 	port=service_port;
 
 /* Parse command line options */
-  while ((option = getopt(argc, argv,"ht:p:")) != -1) {
+  while ((option = getopt(argc, argv,"kht:p:")) != -1) {
     switch (option) 
     {
+      case 'k' : use_kiss = 1;
+        break;
       case 't' : target_host = optarg; 
         break;
       case 'p' : port = optarg;
@@ -117,7 +123,9 @@ int option = 0;
     }
   }
 
-  printf("Connecting with Target Host %s at port %s\n",target_host,port);
+  printf("Connecting with Target Host %s at port %s\nProtocol: ",target_host,port);
+  if(use_kiss) printf("KISS\n");
+  else printf("AX25/n");
 
   /* Register signal and signal handler */
   signal(SIGINT, signal_callback_handler);
@@ -136,23 +144,23 @@ int option = 0;
 
 static void emulate (char *filename)
 {
-FILE            *file;
-long            l;
+FILE  *file;
+long  l;
 unsigned char socket_active;
 struct addrinfo hints, *servinfo;
 struct sockaddr_in sin;
 struct timeval tv;
 fd_set readfds, master;
 
-double		cycles;
-double         total;
-double		timer_int,sio_int;
+double  cycles;
+double  total;
+double  timer_int,sio_int;
 unsigned int key;
-int x;
+int rxcnt,x;
 unsigned short int mycrc;
 
 /* for setting tnc time from sys time */
- char fakeday[]="day 1505270713";
+char fakeday[]="day 1505270713";
 time_t rawtime;
 struct tm *timeinfo;
 
@@ -226,7 +234,8 @@ struct tm *timeinfo;
 
   memset(&hints, 0, sizeof hints);
   hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_DGRAM;
+  if(use_kiss) hints.ai_socktype = SOCK_STREAM;
+  else hints.ai_socktype = SOCK_DGRAM;
 
   if ((x = getaddrinfo(target_host, port, &hints, &servinfo)) != 0) {
     perror(gai_strerror(x));
@@ -237,20 +246,20 @@ struct tm *timeinfo;
   if ((sock_out = socket(servinfo->ai_family, servinfo->ai_socktype,
       servinfo->ai_protocol)) == -1)
   {
-    printf("Err: UDP Socket Open\n");
+    perror("Error Opening Socket to Remote Host.");
     socket_active=0;
 	}
         
   sin.sin_family=AF_INET;
-  sin.sin_port=htons(10093);
 	sin.sin_addr.s_addr=INADDR_ANY;
+  if(!use_kiss) sin.sin_port=htons(10093);
 
 	if ( bind(sock_out,(struct sockaddr *)&sin,sizeof(struct sockaddr_in)) == -1 )
     die("Error: Bind\n");
 
   if (connect(sock_out, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
       close(sock_out);
-      perror("ax25udp: can't connect");
+      perror("Error Connecting to  Remote Host.");
       socket_active=0;
   }
 
@@ -275,7 +284,25 @@ struct tm *timeinfo;
   while (keyhead < 14);
 
   keybuf[keyhead++] = 0x0d; /* place cr */
- 
+
+/* If kiss mode, memorize certain ax25 parms to detect change later
+   and send initial vals to kiss protocol */
+  if(use_kiss)
+  {
+    for(x=1; x< NUM_KISS_PARMS; x++) /* start 1 skip txdelay for now */
+    {
+      ax25_parms[x] = Ram[ax25_parm_location[x]];
+      Socket_Data_In[0] = x+1; /* Parm index for command */
+      Socket_Data_In[1] = ax25_parms[x];
+      rxcnt = 2; /* 2 bytes to encapsulate */
+      kiss_pack(Ax25_Out, Socket_Data_In, &rxcnt);
+      Ax25_Out_Cnt = rxcnt;
+      if ((x = sendto(sock_out, Ax25_Out, Ax25_Out_Cnt, 0,
+        servinfo->ai_addr, servinfo->ai_addrlen)) == -1)
+        die("Socket Xmit Error!\n");
+    }
+  }
+
 /* This is the beginning of the emulation loop */
 
   SIO_Reset(&sioa); /* Reset Emulated Serial i/o a */
@@ -321,6 +348,28 @@ better but for now it works */
       x= timeinfo->tm_year;
       x= x - ((x / 100) * 100);
       Ram[0x4f0f] = tobcd(x);
+
+
+      /* if using kiss protocol check for any paramter changes and
+      update protocol if so */
+      if(use_kiss)
+      {
+        for(x=1; x< NUM_KISS_PARMS; x++) /* start 1 skip txdelay for now */
+        {
+          if(ax25_parms[x] != Ram[ax25_parm_location[x]] )
+          {
+            ax25_parms[x] = Ram[ax25_parm_location[x]];
+            Socket_Data_In[0] = x+1; /* Parm index for command */
+            Socket_Data_In[1] = ax25_parms[x];
+            rxcnt = 2; /* 2 bytes to encapsulate */
+            kiss_pack(Ax25_Out, Socket_Data_In, &rxcnt);
+            Ax25_Out_Cnt = rxcnt;
+            if ((x = sendto(sock_out, Ax25_Out, Ax25_Out_Cnt, 0,
+              servinfo->ai_addr, servinfo->ai_addrlen)) == -1)
+              die("Socket Xmit Error!\n");
+          }
+        }
+      }
     }
 
 /* These values may need to be adjusted depending on the speed of 
@@ -358,14 +407,24 @@ the machine you will be emulating on. */
             if(!txundr_count)
             {
               feedflag = 1; /* txunderrun we can send packet!*/
-              if(socket_active)
+              if(socket_active && Ax25_Out_Cnt)
               {
-                mycrc = compute_crc(Ax25_Out, Ax25_Out_Cnt);
-                Ax25_Out[Ax25_Out_Cnt++] = mycrc & 0xFF;
-                Ax25_Out[Ax25_Out_Cnt++] = mycrc >> 8;
+                if(!use_kiss) /* if ax25 add crc */
+                {
+                  mycrc = compute_crc(Ax25_Out, Ax25_Out_Cnt);
+                  Ax25_Out[Ax25_Out_Cnt++] = mycrc & 0xFF;
+                  Ax25_Out[Ax25_Out_Cnt++] = mycrc >> 8;
+                }
+                { /* else kiss encapsulate with kiss protocol */
+                  Socket_Data_In[0] = 0; /* kiss type data */
+                  for(x=0; x< Ax25_Out_Cnt; x++) Socket_Data_In[x+1] = Ax25_Out[x];
+                  rxcnt = Ax25_Out_Cnt + 1; /* add 1 for the kiss type byte */
+                  kiss_pack(Ax25_Out, Socket_Data_In, &rxcnt);
+                  Ax25_Out_Cnt = rxcnt;
+                }
                 if ((x = sendto(sock_out, Ax25_Out, Ax25_Out_Cnt, 0,
                     servinfo->ai_addr, servinfo->ai_addrlen)) == -1)
-                  die("UDP Socket Xmit Error!\n");
+                  die("Socket Xmit Error!\n");
               }
             }
           }
@@ -405,7 +464,7 @@ the machine you will be emulating on. */
         readfds = master; /* Copy because select etc changes it! */
         if (select(sock_out+1, &readfds, NULL, NULL, &tv) == -1)
         {
-          perror("select");
+          perror("Error on socket select!");
           exit(4);
         }
 
@@ -414,12 +473,12 @@ the machine you will be emulating on. */
 
         if (FD_ISSET(sock_out, &readfds))
         {
-          if ((x = recv(sock_out, Ax25_In, sizeof Ax25_In, 0)) <= 0)
+          if ((rxcnt = recv(sock_out, Socket_Data_In, sizeof Socket_Data_In, 0)) <= 0)
           {
             /* here we got error or connection closed by client */
 
             /* Connection Closed */
-            if (x == 0) printf("selectserver: socket server hung up.\n");
+            if (rxcnt == 0) printf("selectserver: socket server hung up.\n");
             else perror("ax25 recv error."); /* else an error */
 
             close(sock_out); // bye!
@@ -428,14 +487,28 @@ the machine you will be emulating on. */
           else /* we have data from socket */
           {
             activity2 = 3000; /* we have activity so set counter for sleep algo */
-            mycrc = compute_crc(Ax25_In, x-2);
-  #ifdef DEBUG
-            printf("CRC=%2x RxCRC=%x%x\n",mycrc,Ax25_In[x-1],Ax25_In[x-2]);
-  #endif
-            if( mycrc == ( (Ax25_In[x-1] << 8) + Ax25_In[x-2] ) ) /* crc check */
+
+            /* If using kiss protocol convert buffer back to ax25 data */
+            if(use_kiss)
             {
-              Ax25_In_Cnt = x-1;
+              kiss_unpack(Socket_Data_In, Ax25_In, &rxcnt);
+              for(x=0; x < rxcnt; x++) 
+                Ax25_In[x] = Ax25_In[x+1]; /* Remove Kiss Packet type */
+
+              Ax25_In_Cnt = rxcnt-1; /* adjust to get total # of bytes left in buffer */
               RxCharIn_Idx = 1; /* Let everyone know */
+            }
+            else /* else just copy data to x25 buffer */
+            {
+              mycrc = compute_crc(Ax25_In, x-2);
+#ifdef DEBUG
+              printf("CRC=%2x RxCRC=%x%x\n",mycrc,Ax25_In[rxcnt-1],Ax25_In[rxcnt-2]);
+#endif
+              if( mycrc == ( (Ax25_In[rxcnt-1] << 8) + Ax25_In[rxcnt-2] ) ) /* crc check */
+              {
+                Ax25_In_Cnt = rxcnt-1; /* adjust to get total # of bytes in buffer */
+                RxCharIn_Idx = 1; /* Let everyone know */
+              }
             }
           }
         }
@@ -913,7 +986,7 @@ char result;
 
 void print_usage(void)
 {
-  printf("Usage: tnc [-t host] [-p port]\n");
+  printf("Usage: tnc [-t host] [-p port] [-k]\n");
   printf("Try tnc -h for more information.\n");
 }
 
@@ -921,6 +994,7 @@ void print_info(void)
 {
   printf("Tnc Emulator Version %s\n",VERSION_INFO);
   printf("Command line Parameters:\n");
-  printf("-t target ax25 host ip address or dns name\n");
+  printf("-t target host ip address or dns name\n");
   printf("-p targt port (default 10093)\n");
+  printf("-k Kiss Protocol (Default is ax25)\n");
 }
