@@ -79,6 +79,16 @@ char *target_host;
 unsigned char TestAx25[18] = {0x00, 0x96, 0x8c, 0x6e, 0xa0, 0xa6, 0x9a, 0xe6, 0x96, 0x8c,
                                 0x6e, 0xa0, 0xa6, 0x9a, 0x61,  0x3f, 0x63, 0x1d};
 
+/* Array to store vars that we have discovered in emulation ram that 
+   pertain to certain kiss paramters. Index of array is a follows:
+   0 = TXDELAY
+   1 = Persistence
+   2 = SLOTTIME
+   3 = TXTAIL
+*/
+#define NUM_KISS_PARMS 4
+unsigned char ax25_parms[NUM_KISS_PARMS] = {0,0,0,0};
+unsigned int ax25_parm_location[NUM_KISS_PARMS] = {0x3FDA, 0x4033, 0x4035, 0x3FD7};
 
 /* Declare struct vars for SIO channels */
 IC_SIO	sioa;

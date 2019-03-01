@@ -26,17 +26,6 @@ extern unsigned int Memory_Read_Word(unsigned int);
 extern void Memory_Write_Byte(unsigned int, unsigned int);
 extern void Memory_Write_Word(unsigned int, unsigned int);
 
-/* Array to store vars that we have discovered in emulation ram that 
-   pertain to certain kiss paramters. Index of array is a follows:
-   0 = TXDELAY
-   1 = Persistence
-   2 = SLOTTIME
-   3 = TXTAIL
-*/
-#define NUM_KISS_PARMS 4
-unsigned char ax25_parms[NUM_KISS_PARMS] = {0,0,0,0};
-unsigned int ax25_parm_location[NUM_KISS_PARMS] = {0x3FDA, 0x4033, 0x4035, 0x3FD7};
-
 #define __TNC_INCLUDED__
 
 #endif

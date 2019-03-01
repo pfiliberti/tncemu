@@ -25,8 +25,6 @@ endif
 
 all: rom ram tnc
 
-crc: crc
-
 tables.h: ./z80emu/maketables.c
 	$(CC) $(CFLAGS) $< -o ./z80emu/maketables
 	./z80emu/maketables > ./z80emu/$@
@@ -41,13 +39,19 @@ tnc.o: tnc.c ./z80emu/z80emu.h
 crc.o: crc.c crc.h
 	$(CC) $(CFLAGS) -c $<
 
-OBJECT_FILES = tnc.o ./z80emu/z80emu.o crc.o
+kiss.o: kiss.c kiss.h
+	$(CC) $(CFLAGS) -c $<
+
+OBJECT_FILES = tnc.o ./z80emu/z80emu.o crc.o kiss.o
 
 tnc:	$(OBJECT_FILES)
 	$(CC) $(OBJECT_FILES) rom.o -o $@
 
 crc:	crc.o
-	$(CC) ($CFLAGS) crc.o -o $@
+	$(CC) crc.o -o $@
+
+kiss:	kiss.o
+	$(CC) kiss.o -o $@
 
 ram:
 	cp ./binary_dumps/tnc.ram .
