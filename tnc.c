@@ -424,13 +424,15 @@ the machine you will be emulating on. */
                   Ax25_Out[Ax25_Out_Cnt++] = mycrc & 0xFF;
                   Ax25_Out[Ax25_Out_Cnt++] = mycrc >> 8;
                 }
-                { /* else kiss encapsulate with kiss protocol */
+                else /* else kiss encapsulate with kiss protocol */
+                {
                   Socket_Data_In[0] = 0; /* kiss type data */
                   for(x=0; x< Ax25_Out_Cnt; x++) Socket_Data_In[x+1] = Ax25_Out[x];
                   rxcnt = Ax25_Out_Cnt + 1; /* add 1 for the kiss type byte */
                   kiss_pack(Ax25_Out, Socket_Data_In, &rxcnt);
                   Ax25_Out_Cnt = rxcnt;
                 }
+
                 if ((x = sendto(sock_out, Ax25_Out, Ax25_Out_Cnt, 0,
                     servinfo->ai_addr, servinfo->ai_addrlen)) == -1)
                   die("Socket Xmit Error!\n");
@@ -509,7 +511,10 @@ the machine you will be emulating on. */
             }
             else /* else just copy data to x25 buffer */
             {
-              mycrc = compute_crc(Ax25_In, x-2);
+              for(x=0; x < rxcnt; x++) 
+                Ax25_In[x] = Socket_Data_In[x]; 
+
+              mycrc = compute_crc(Ax25_In, rxcnt-2);
 #ifdef DEBUG
               printf("CRC=%2x RxCRC=%x%x\n",mycrc,Ax25_In[rxcnt-1],Ax25_In[rxcnt-2]);
 #endif
