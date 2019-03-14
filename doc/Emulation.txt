@@ -139,7 +139,7 @@ IO out 0 to port 1a
 Variables stored in certain ram memory locations used to configure
 remote side of future kiss protocol.
 
-TXDELAY  $3FDA
+TXDELAY  $3FDB
 PERSIST  $4033
 SLOTTIME $4035
 AXHANG   $3FD7

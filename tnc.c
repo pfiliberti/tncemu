@@ -87,7 +87,7 @@ unsigned char TestAx25[18] = {0x00, 0x96, 0x8c, 0x6e, 0xa0, 0xa6, 0x9a, 0xe6, 0x
 */
 #define NUM_KISS_PARMS 4
 unsigned char ax25_parms[NUM_KISS_PARMS] = {0,63,2,3}; /* Common defaults */
-unsigned int ax25_parm_location[NUM_KISS_PARMS] = {0x3FDA, 0x4033, 0x4035, 0x3FD7};
+unsigned int ax25_parm_location[NUM_KISS_PARMS] = {0x3FDB, 0x4033, 0x4035, 0x3FD7};
 
 /* Declare struct vars for SIO channels */
 IC_SIO	sioa;
@@ -363,7 +363,7 @@ better but for now it works */
       update protocol if so */
       if(use_kiss)
       {
-        for(x=1; x< NUM_KISS_PARMS; x++) /* start 1 skip txdelay for now */
+        for(x=0; x< NUM_KISS_PARMS; x++)
         {
           if(ax25_parms[x] != Ram[ax25_parm_location[x]] )
           {
