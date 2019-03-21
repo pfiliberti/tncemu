@@ -1,0 +1,4599 @@
+This is a list of commands that the tnc firmware supports.
+
+------------------------------------------------------------
+Command   :    8BITCONV ON/OFF
+Mnemonic  :    8
+Default   :    ON
+
+Parameter :    ON   The high-order bit IS NOT stripped in
+                    Converse Mode.
+
+               OFF  The high-order bit IS stripped in
+                    Converse Mode.
+
+Refer to  :    AWLEN, PARITY, RXBLOCK
+------------------------------------------------------------
+8BITCONV permits packet transmission of eight-bits  data  in
+the converse mode.
+
+If  8BITCONV  is  OFF,  the  high-order  bit  (bit seven) of
+character received from the terminal is removed  before  the
+characters are transmitted in a packet.
+
+The  standard  ASCII character set requires only seven bits.
+The eight or final bit is used as a parity bit or ignored.
+
+NOTE: Setting bit seven in text characters transmitted  over
+the air may cause confusion at the other end.
+
+If  you  need  to transmit eight-bit data but don't want all
+the features of Transparnt Mode,  set 8BITCONV ON and  AWLEN
+8.  This  may  be  desirable if you are using a special non-
+ASCII character set.
+
+Since commands require only  the  standard  seven-bit  ASCII
+character  set,  bit  seven is always removed in the Command
+Mode.
+
+Set this command to ON if you use RXBLOCK.
+
+
+
+------------------------------------------------------------
+Command   :    nMACRO text
+Mnemonic  :    M
+Default   :    Empty
+
+Parameter :    n    0 through 4 identifies a macro command
+                    or data string.
+
+Refer to  :    none
+------------------------------------------------------------
+The Macro commands start with a numeric character 0-4.  Five
+macros  can  be stored.   5 macros may not exceed a total of
+119 characters.
+
+To set the macro's contents, type the following sequence:
+
+1) The macro number;
+2) The letter M;
+3) Space Bar;
+4) The macro text or contents;
+5) Carriage return.
+
+For example, at the command prompt; type :
+
+cmd: 2M CONNECT W6YEY <CR>
+
+From this point on, if you type 2M at the cmd: prompt in the
+command  mode,  the  TNC  will display the contents of macro
+No.2.
+
+cmd: 2M
+CONNECT W6YEY
+
+To erase a macro's contents,  type a new macro  over  it  or
+enter the number,  "M",  a "Space Bar",  and "%" followed by
+<CR>.
+
+You can install an entire string of  commands  in  a  single
+macro.    Type  the  macro  number  and  M,  followed by the
+specific commands separated by a slant bar (/).
+
+Example:
+
+cmd: 3M AX25L2V2 ON/TXDELAY 50/FRACK 4 <CR>
+
+The entering of a macro command is subject to the  same  119
+character  limit  as  any  normal  command.    After a macro
+command has  put  the TNC in Converse or  Transparent  mode,
+you cannot use a macro to return to the Command Mode.
+
+
+
+------------------------------------------------------------
+Command   :    3RDPARTY ON/OFF
+Mnemonic  :    3RD
+Default   :    ON
+
+Parameter :    ON   Allow any station to access your BBS.
+
+               OFF  Allow to access the BBS only station
+                    specified by MYMCALL.
+
+Refer to  :    MBOD, MYMCALL
+------------------------------------------------------------
+This  command  sets whether any station can be allowed to use
+your message board as an open BBS.If 3RDPARTY is OFF, your
+message board is effective for only personal use.
+
+
+
+------------------------------------------------------------
+Command   :    AX25L2V2 ON/OFF
+Mnemonic  :    A
+Default   :    ON
+
+Parameter :    ON   The TNc uses AX.25 level 2 version 2.0
+                    protocol.
+
+               OFF  The TNc uses AX.25 level 2 version l.0
+                    protocol.
+
+Refer to  :    none
+------------------------------------------------------------
+Some   implementations  of  the  earlier  version  of  AX.25
+protocol will not repeat version 2.0 AX.25 packets properly.
+This command provides compatibility with those older  packet
+controllers.
+
+
+
+------------------------------------------------------------
+Command   :    ABAUD n (0 - 19200)
+Mnemonic  :    AB
+Default   :    1200
+
+Parameter :    n    Specifies the data rate of signaling
+                    speed in baud, on the serial I/O
+                    terminal port. The "n" should be 0, 300,
+                    600, 1200, 2400, 4800, 9600 and 19200.
+
+Refer to  :    RESTART, RESET, RAMTEST
+------------------------------------------------------------
+If  the  ABOUD  is  set  to  0,  the TNC goes into AUTO-BAUD
+routine.  If AUTO-BAUD is enabled you will see the following
+message:
+
+Please type (*) for the auto-baud routine.
+
+If this happens,  type four or five asterisks  (*),  at  one
+second interval, until you see the sign-on message.
+
+The  RESET  command  does  not change the ABAUD to a default
+value.   If RAMTEST is initiated,  the ABAUD value return to
+factory default of 1200 baud.
+
+
+
+------------------------------------------------------------
+Command   :    AFILTER n1 - n4
+Mnemonic  :    AF
+Default   :    $0
+
+Parameter :    n1 to n4 specifies the character which will
+               be filtered out during packet reception in
+               the Converse Mode.
+
+Refer to  :    MFILTER
+------------------------------------------------------------
+Sometimes  you  need  to filter out the special character(s)
+during  packet   communication   in   the   Converse   Mode.
+Especially,  if  incoming  packet  control character affects
+some type of terminals become inoperative.   You can specify
+up  to  four characters to be filtered out from the incoming
+packet signal.
+
+Example:
+
+cmd: AFILTER $80  <CR>
+
+This example shows that all control characters  except  <CR>
+and <LF> will be filtered out during packet reception.
+
+If you want to specify more than one character, separate the
+character by "," as shown in the following example.
+
+cmd: AFILTER $11, $13, $1A, $1E <CR>
+
+AFILTER  only  affects  in  receiving  in the Converse Mode.
+This command has no effect  in  the  Monitor  Mode  and  the
+Transparent  Mode.    To  clear the contents in the AFILTER,
+enter "0" after the AFILTER command.
+
+cmd: AFILTER 0 <CR>
+
+
+
+------------------------------------------------------------
+Command   :    AUTOLF ON/OFF
+Mnemonic  :    AU
+Default   :    ON
+
+Parameter :    ON   A line feed character <LF> is sent to
+                    the terminal after each carriage return
+                    character <CR>.
+
+               OFF  A <LF> is NOT sent to the terminal after
+                    each <CR>.
+
+Refer to  :    LFADD, RXBLOCK
+------------------------------------------------------------
+AUTOLF is included  to  maintain  compatibility  with  other
+packet radio controllers.
+
+If  your  display  terminal does not line-feed during packet
+reception, check this command.
+
+AUTOLF affects only terminal displays and it does not affect
+sending packet.
+
+If the other station you are talking to reports overprinting
+of packets from your station, use LFADD command.
+
+To use RXBLOCK command, set AUTOLF OFF to accurately display
+the data block length.
+
+
+
+------------------------------------------------------------
+Command   :    AWLEN n
+Mnemonic  :    AW
+Default   :    7
+
+Parameter :    n    7 or 8 specifies the number of data bits
+                    per word.
+
+Refer to  :    8BITCONV, PARITY, RESTART
+------------------------------------------------------------
+The  parameter value defines the digital word length used by
+the serial input/output (IO) terminal port and your computer
+or terminal program.   The  new  value  affects  only  after
+RESTART or power On/Off reset.
+
+NOTE: Use default value (7) for most packet operations, such
+as conversation,  working electronic mail and bulletin board
+systems and transmission of ASCII files.
+
+If eight-bit words are sent to the TNC in the Command or the
+Converse modes, the eighth bit is normally removed,  leaving
+a  standard  ASCII  character,  regardless of the setting of
+AWLEN.
+
+All eight data bits of each character must  be  retained  to
+send executable files or other special data.
+
+NOTE: Set AWLEN to 8 and use the Transparent Mode.
+
+You  can also use Converse Mode and set AWLEN 8 and 8BITCONV
+ON.  However,  you must precede the  Converse  Mode  special
+characters with the PASS character in the data you send.
+
+NOTE: Set AWLEN to 8 if you use RXBLOCK command.
+
+
+
+------------------------------------------------------------
+Command   :    AXDELAY n
+Mnemonic  :    AXD
+Default   :    0
+
+Parameter :    n    0 - 120 specifies a key-up delay for
+                    voice repeater 10mS intervals.
+
+Refer to  :    AXHANG, TXDELAY, DWAIT
+------------------------------------------------------------
+AXDELAY  specifies  the  period  of time the controller will
+wait, in addition to the normal delay set by TXDELAY,  after
+keying the transmitter and before data is sent.
+
+Packet  groups  using  a standard "voice" repeater to extend
+the range of the local network may need to use this feature.
+
+Repeaters with slow electromechanical relays,  split  sites,
+auxiliary links,  or other circuits which delay transmission
+for some time after the RF carrier is present,  require some
+amount of time to get the RF on the air,
+
+If  you  are  using  a repeater that has not previously been
+used for packet operations,  try various values to find  the
+best value.
+
+If  other stations have been using the repeater,  check with
+them for the proper setting.
+
+AXDELAY acts in conjunction with AXHANG.
+
+
+
+------------------------------------------------------------
+Command   :    AXHANG n
+Mnemonic  :    AXH
+Default   :    0
+
+Parameter :    n    0 - 250 specifies voice repeater hang
+                    time in 100mS intervals.
+
+Refer to  :    AXDELAY, DWAIT
+------------------------------------------------------------
+  A numeric value can be used to increase channel efficiency
+when an audio repeater has a  hang  time  greater  than  100
+milliseconds.  For  a repeater with a long hang time,  it is
+not necessary to wait for the repeater  key-up  delay  after
+keying he transmitter if the repeater is still transmitting.
+
+When the TNc has heard a packet sent within the hang period,
+it  does  not add the repeater key-up delay (AXDELAY) to the
+key-up time.   The key-up time is determined  by  TXDELAY  +
+DWAIT.  Therefore,  set  AXHANG  should  be  set  less  than
+repeater hang time.
+
+If you are using a repeater that hasn't been used for packet
+operation before, try various values to find the best value.
+
+If other packet stations have been using the  repeater,  ask
+them for the appropriate setting.
+
+
+
+-----------------------------------------------------------
+Command   :    BEACON EVERY/AFTER n
+Mnemonic  :    B
+Default   :    EVERY 0
+
+Parameter :    EVERY     Send the beacon at regular
+                         intervals.
+
+               AFTER     Send the beacon once after the
+                         specified time interval without
+                         packet activity.
+
+               n         0-250 specifies timing in 10 Sec.
+                         intervals.
+
+               0         Zero disables off the beacon
+                         function.
+
+Refer to  :    BTEXT, UNPROTO
+------------------------------------------------------------
+The  BEACON  command  sets  the  conditions under which your
+packet beacon will be transmitted.
+
+NOTE: A beacon frame contains the text you have  typed  into
+the  BTEXT   message  in  a  packet  addressed 'CQ' or other
+UNPROTO  address.
+
+NOTE: A beacon frame may be sent directly, and also sent via
+the digipeat addresses specified by the UNPROTO command.
+
+When the keyword EVERY is specified, a beacon packet is sent
+every n times 10 seconds.  This mode can be used to transmit
+packets for testing purposes.
+
+When  AFTER is specified,  a beacon is sent after n times 10
+seconds have passed without packet activity.
+
+NOTE: The beacon is sent only once until further activity is
+detected.
+
+This mode can be used to send announcements or test messages
+only when packet stations are on the air.
+
+NOTE: Proper choice of 'n' avoids cluttering a busy  channel
+with lots of unnecessary transmissions.
+
+
+
+------------------------------------------------------------
+Command   :    BBSMSGS ON/OFF
+Mnemonic  :    BBS
+Default   :    OFF
+
+Parameter :    ON   Modify display message format to
+                    terminal.
+
+               OFF  Standard display message format.
+
+Refer to  :    CONK, MONITOR, MBOD, NEWMODE, NOMODE, USERS
+------------------------------------------------------------
+When BBSMSGS is set to ON,  the TNC will output the terminal
+with modified message format. The <LF> character is added to
+in front of the display message.
+
+
+<LF> *** CONNECTED
+<LF> *** DISCONNECTED
+<LF> *** retry limit exceeded
+<LF> *** xxx Busy
+<LF> *** FRAME sent
+<LF> *** FRAME rcvd
+
+In the above example,  the display message will include  the
+<LF>.
+
+When  this  command is active,  "*** Connect request: xxxx "
+will not be displayed.
+
+If BBSMSGS ON and CONOK OFF,  the TNC will  respond  to  all
+connect request that you are busy, but the terminal will not
+output  the  "***  Connect  request:  xxx  " message.   This
+feature can be used while you  are  receiving  an  important
+data from the other station,  and you do not want to disturb
+by the connect request message.
+
+CONOK OFF will reject all connection request.   Set CONOK ON
+if you use BBS feature.
+
+
+
+------------------------------------------------------------
+Command   :    BEKONDEL ON/OFF
+Mnemonic  :    BK
+Default   :    ON
+
+Parameter :    ON   The sequence <BACKSPACE> <SPACE>
+                    <BACKSPACE> is echoed when a character
+                    is deleted from the input line.
+
+               OFF  The <BACKSLASH> character <\> is echoed
+                    when a character is deleted.
+
+Refer to  :    REDISPLA
+------------------------------------------------------------
+BKONDEL  determines  how  character deletion is displayed in
+Command or Converse mode.
+
+The <BACKSPACE><SPACE><BACKSPACE> sequence updates the video
+display screen.
+
+NOTE: Set BKONDEL ON  if  you  are  using  a  video  display
+terminal or computer.
+
+On  a  printing terminal the <BACKSPACE> <SPACE> <BACKSPACE>
+sequence will result in over-typed text.
+
+NOTE: Set BKONDEL OFF if you have a paper output display, or
+if  your  terminal  does  not  respond  to  the  <BACKSPACE>
+character   <CNTRL-H>.
+
+The  TNc  displays  a  <BACKSLASH>  for  each  character you
+delete.  You can see a display of  the  corrected  input  by
+typing  the  redisplay-line  character  set  by  the command
+REDISPLA.
+
+
+
+------------------------------------------------------------
+Command   :    BETEXT text
+Mnemonic  :    BT
+Default   :    Empty
+
+Parameter :    Any combination of characters and spaces, up
+               to a maximum length of 239 characters.
+
+Refer to  :    BEACON, PASS
+------------------------------------------------------------
+BETEXT is the content  of  the  data  portion  of  a  beacon
+packet. The default text is an empty string (no message).
+
+NOTE:  BEACON packets are discussed in more detail under the
+BEACON command.
+
+You can  send  multiple-line  messages  in  your  beacon  by
+including <CR>  characters in the text.  <CR> is inserted by
+typing the PASS character(CTRL-V) before the <CR>.
+
+NOTE: The pass character is set by the PASS command.
+
+If you enter a text string longer than 239  characters,  the
+command  line  is  ignored  and  the following error message
+appears.
+
+?too long
+
+NOTE: Use a "%" or "&" as the first characters in the beacon
+text to clear the  BTEXT  text  without  issuing  the  RESET
+command.
+
+Although  the  subject  of  beacon is conventional in packet
+circles,  the following four suggestions will help  you  use
+the feature intelligently and benefit the packet community:
+
+1)  Do not type your call sign in BTEXT.   The normal packet
+header shows it for you.
+
+2) Do not fill your  BTEXT  with  screen  graphics  such  as
+asterisk,  parentheses,  colons  and semicolons,  etc.   Use
+BTEXT for some significant information.
+
+3) Do not use BTEXT to tell the world that your  "DIGIPEATER
+IS  ON"  and  "BUFFER  SAVE  TO  DISK IS ENABLE".   Put this
+information in your CTEXT message so that it is seen by  any
+station that connects you,  the only one who can make use of
+the information.
+
+4) After you have beaconed for a week or two and the  packet
+community  has  learned  who  and where you are,  follow the
+practice used by more experienced packeteers.    SET  BEACON
+EVERY 0 !!!
+
+
+
+------------------------------------------------------------
+Command   :    BUDLIST ON/OFF
+Mnemonic  :    BU
+Default   :    OFF
+
+Parameter :    ON   Ignore frames from station which are not
+                    in the LCALLS list.
+
+               OFF  Ignore frame from stations which are in
+                    the LCALLS list.
+
+Refer to  :    LCALLS, MONITOR
+------------------------------------------------------------
+BUDLIST works together with the LCALLS command, which allows
+you  to  set  up a call sign list.  These commands determine
+which packets are displayed when  you  set  MONITOR  to  ON.
+BUDLIST  allows you to specify whether the call signs in the
+list are those you wish to ignore,  or if they are the  ones
+you want to displayed.
+
+If you want your TNC to display packets only from a  limited
+list,  use LCALLS to enter the list of call signs,  and then
+set BUDLIST to ON.  This feature enables you to have the TNC
+watch for a  particular  station  while  you  converse  with
+another station.
+
+If  you want your TNC to ignore packets from a limited list,
+use  LCALLS to enter the list of call signs,  and  then  set
+BUDLIST  to  OFF.    This is handy when you want to ignore a
+bulletin board on the  frequency,  for  example,  while  you
+monitor other conversations.
+
+
+
+------------------------------------------------------------
+Command   :    CONNECT call1[VIA call2[,call3...,call9]]
+Mnemonic  :    C
+Default   :    Immediate command
+
+Parameter :    call1     Call sign of the distant station to
+                         which you wish to be connected.
+
+               call2     Optional call sign(s) of up to
+                         eight digipeaters via which you
+                         want to be repeated to reach the
+                         other station.
+
+Refer to  :    DISCONNE
+------------------------------------------------------------
+CONNECT  sends a connect request to station 'call,' directly
+or via one or more digipeaters.  Each call sign can  include
+an optional SSID "n", immediately after the call sign.
+
+The  part  of  the  command  line shown in brackets below is
+optional.  The double-bracketed  text,  'call3...,call9'  is
+also  optional  and  is  used only when 'VIA call2' is used,
+that is,  when  you  are  connecting  through  one  or  more
+digipeaters.  (The  brackets and quotation marks are used in
+this text only for clarity. Do not  type them!)
+
+VIA call2[,call3...,call9]
+
+NOTE: Type the digipeater fields in the exact  sequence  you
+wish to use to route your packets to the destination station
+"call."
+
+If you type CONNECT while your TNC is already connected,  or
+trying to connect to or  disconnect  from  another  station,
+your monitor will display.
+
+Link state is:CONNECT in progress
+
+If  the  other  station  does not "ack" your connect request
+after the number of tries specified by  RETRY,  the  CONNECT
+command is canceled and your monitor displays:
+
+cmd: *** Retry count exceeded
+*** DISCONNECTED: (call sign)
+To connect directly to W6YEY, you would type:
+
+CONNECT W6YEY (or C W6YEY)
+
+To  connect  to  W6YEY using W6UOU (with whom you can easily
+connect) and W6WNE (who is near W6YEY) as digipeaters, type:
+
+CONNECT W6YEY VIA W6UOU, W6WNE
+
+Type CONNECT or 'C' without arguments to see the link status
+and the number of unacknowledged, outstanding packets.
+
+
+
+
+------------------------------------------------------------
+Command   :    CALIBRA
+Mnemonic  :    CAL
+Default   :    Immediate Command
+
+Parameter :    None
+
+Refer to  :    None
+------------------------------------------------------------
+CALIBRA is an immediate command that provides a means to key
+your transmitter and send continuous AFSK tone modulation.
+
+Use the CALIBRA command to  measure  transmitter  modulation
+and other performance characteristics.
+
+Commands available in the calibration routine are :
+
+<SPACE>   Toggles the transmitted audio between "MARK" and
+          "SPACE" tones.
+
+D         Alternates the transmitted mark and space tones at
+          a rate set by the radio port rate. (HBAUD)
+
+K         Toggles the PTT line between ON and OFF.
+
+Q         Quits the calibration routine,
+
+
+
+
+------------------------------------------------------------
+Command   :    CANLINE n
+Mnemonic  :    CAN
+Default   :    $18 <CTRL-X>
+
+Parameter :    n    0 to $7F (o to 127 decimal) specifies an
+                    ASCII character code.
+
+Refer to  :    CANPAC
+------------------------------------------------------------
+CANLINE   changes  the  CANCEL-LINE  input  editing  command
+character.
+
+The parameter "n" is the ASCII code for  the  character  you
+want to use to cancel an input line.   The following example
+show how to enter the code in hex and decimal.
+
+CANLINE $15 (hex)
+CANLINE 21  (decimal)
+
+Either method sets the cancel-line character to <CTRL-U>.
+
+When you use the CANLINE character to cancel an  input  line
+in  the  Command  Mode,   the  line  is  terminated  with  a
+<BACKSLASH> character and new prompt (cmd:) appears.
+
+When you cancel a  line  in  the  Converse  Mode,  only  the
+<BACKSLASH> and a new line appear.
+
+NOTES:
+
+1) You can cancel only the line you are currently typing.
+
+2)  Once  you  type  a <CR>,  you cannot use the cancel-line
+character to cancel an input line.
+
+3) Use CANPAC character to cancel the entire packet.
+
+4) If you send-packet character is not <CR>, the cancel-line
+character cancels only the last line of a multiline packet.
+
+Like all other input editing features,  line cancellation is
+disable in the Transparent Mode.
+
+
+
+
+------------------------------------------------------------
+Command   :    CANPAC n
+Mnemonic  :    CANP
+Default   :    $19 <CTRL-Y>
+
+Parameter :    n    0 to $7F (0 to 127 decimal) specifies an
+                    ASCII character code.
+
+Refer to  :    CANLINE
+------------------------------------------------------------
+CANPAC  changes  the  CANCEL-PACKET  input  editing  command
+character.
+
+The parameter "n" is the ASCII code for  the  character  you
+want to type in order to cancel an input packet.
+
+NOTE: You can enter the code in either hex or decimal.
+
+When  you cancel a packet in the Converse Mode,  the line is
+terminated with a <BACK SLASH> character and a new line.
+
+NOTE: You can only cancel the packet that you care currently
+entering.
+
+Once you have typed the  send-packet  character,  or  waited
+PACTIME  (if  PACTIME  is  enable),  the  packet  cannot  be
+canceled even if it has not been transmitted.
+
+Like other input editing features,  packet  cancellation  is
+disabled in the Transparent Mode.
+
+The  CANCEL-PACKET character also cancels the display output
+in the Command Mode.   If the TNC is in the Command Mode and
+you  type  the CANCEL-PACKET character,  any characters that
+would be typed on  the  screen  (except  those  echoed)  are
+"discarded" by the TNC.
+
+NOTES:
+
+1) Typing the cancel-output character a second time restores
+normal output.
+
+2) To see how this works, type DISPALY followed by a
+<CTRL-Y>.
+
+The  command list display will stop and you will not see any
+response from the TNC.
+
+To verify that the display is back to normal, type <CTRL-Y>,
+and then type DISPLAY again.
+
+Use the  CANCEL-DISPALY  feature  if  you  inadvertently  do
+something  that  cause  the TNC to generate large amounts of
+output to the terminal, such as entering the DISPLAY command
+or setting TRACE ON.
+
+NOTE: If the TNC is in the Converse or Transparent Mode  and
+you  want  to  cancel  display output,  you must exit to the
+Command Mode before you type the CANCEL-PACKET character.
+
+
+
+------------------------------------------------------------
+Command   :    CBELL ON/OFF
+Mnemonic  :    CB
+Default   :    OFF
+
+Parameter:     ON   Three BELL characters <CTRL-G> ($07) are
+                    sent to your terminal with the
+                    '*** CONNECTED to (call sign)'message.
+
+               OFF  BELLS are not sent with the CONNECTED
+                    message.
+
+Refer to  :    none
+------------------------------------------------------------
+NOTES:
+
+1) Set CBELL ON if you want to be notified whenever  someone
+connects to your station.
+
+2)  If CBELL is on and MFILTER contains the character ($07),
+you can be sure that whenever your terminal beeps there is a
+connection for you.  At no other time will you hear  a  beep
+while the TNC is in the Packet Mode.
+
+3)  This  feature  works  only the stream is set to "K" when
+someone connected to MYMCALL.
+
+
+
+------------------------------------------------------------
+Command   :    CHECK n
+Mnemonic  :    CH
+Default   :    30
+
+Parameter :    n    0 to 250 specifies the check time in 10
+                    seconds intervals.
+
+               0    Zero disables this feature.
+
+Refer to  :    AX25L2V2, TOUT
+------------------------------------------------------------
+CHECK sets a time-out value for  a  packet  connection,  and
+depends on the setting of AX25L2V2.
+
+Without  the  CHECK  feature,  if  your  TNC  was  linked or
+'connected' to another station and the other station  seemed
+to 'disappear', your TNC would remain in the connected state
+indefinitely, refusing connections from other stations.
+
+This  might happen if propagation changes unexpectedly or an
+intermediate digipeater station fails or is shut down  while
+you   and   the  other  station  are  connected  'via'  that
+digipeater.
+
+Your TNC  tries  to  prevent  this  sort  of  'lockup'  from
+occurring by
+sending  a  new  connect  request packet when specified time
+elapses without any packets being received  from  the  other
+TNC.
+
+If  Perversion  2  link  is  inactive  for  CHECK  times ten
+seconds,   your TNC tries to save the  link  by  starting  a
+reconnect sequence. The TNC enters the 'connect in progress'
+state and sends SABM (connect request) frames.  In addition,
+the TNC adds a random time of up to  30  seconds  each  time
+CHECK is used.
+
+NOTE:  If  AX25L2V2 is ON and packets have not been received
+from the other station for 'n' times 10  seconds,  your  TNC
+sends  a  'check packet' to test if the link still exists to
+the other station.
+
+The 'check' packet frame contains  no  information,  but  is
+interpreted by the other station's TNC to see if it is still
+connected. If the other station's TNC is still connected, it
+sends an appropriate response packet.
+
+
+
+------------------------------------------------------------
+Parameter :    CIDCON EVERY/AFTER n
+Mnemonic  :    CID
+
+Parameter :    EVERY     Send the Morse Code ID at regular
+                         interval.
+
+               AFTER     Sends the Mores Code ID once after
+                         the specified time interval with no
+                         packet activity.
+
+               n         0-250 specifies the Morse Code ID
+                         timing in 10 second intervals.
+
+               0         Zero turns off the Morse Code ID.
+
+Refer to  :    CWID
+------------------------------------------------------------
+The  CIDCON  command  sets  the  conditions under which your
+Mores Code ID will be transmitted.
+
+NOTES:
+
+1) The Morse Code ID contains the text that you  have  typed
+into the CWID.
+
+2)  The  Mores Code is transmitted approximately 20WPM (Word
+Per Minute) and the Morse Code is being keyed  by  the  AFSK
+modem using their tones.
+
+NOTE:  Since the CIDCON is sending your text by a real Mores
+Code, the other station's TNC cannot display any message.
+
+This feature allows to notify you to the other stations  who
+are not using the packet communication.
+
+
+
+------------------------------------------------------------
+Command   :    CMDTIME n
+Mnemonic  :    CM
+Default   :    1
+
+Parameter :    n    0 to 250 specifies time-out value in 1
+                    second intervals while in Transparent
+                    Mode.
+
+Refer to  :    COMMAND, TRANS
+------------------------------------------------------------
+If 'n' is 0 (zero) ,  you will have to send the BREAK signal
+or interrupt power to the TNC to exit from Transparent Mode.
+
+CMDTIME sets the time-out value in Transparent Mode. A guard
+time of 'n' seconds allows escape to the Command  Mode  from
+the  Transparent Mode,  while permitting any character to be
+sent as data.
+
+The same Command Mode  entry  character  (default  <CTRL-C>)
+that  is used to exit from the Converse Mode is also used to
+exit  the  Transparent  Mode,   although  the  procedure  is
+different.
+
+NOTES:
+
+1) The Command Mode entry character is set by COMMAND.
+
+2)  Three  Command Mode entry character must be entered less
+than 'n' seconds  apart,  with  no  intervening  characters,
+after  a  delay of 'n' seconds following the last characters
+you typed.
+
+3) After a final delay of 'n' seconds,  the  TNC  exits  the
+Transparent Mode and enters the Command Mode.
+
+4) You will then see the normal Command Mode prompt:
+
+cmd:
+
+The following diagram illustrates this timing:
+
+last        first       second     third               TNC
+terminal    command     command    command          now in
+input       mode        mode       mode            command
+|           entry       entry      entry              mode
+|           character   character  character             |
+|               |              |             |           |
+|               |              |             |           |
+|               |              |             |           |
+|               |              |             |           |
+|<--- longer--->|<---shorter-->|<--shorter-->|< -- n --->|
+      than 'n'       than 'n'      than 'n'
+
+
+
+
+------------------------------------------------------------
+Command   :    CMSG ON/OFF
+Mnemonic  :    CMS
+Default   :    OFF
+
+Parameter :    ON   The recorded CTEXT message is sent as
+                    the first packet after a connection is
+                    established by a connect request from
+                    another station.
+
+               OFF  The text message is not sent at all.
+
+Refer to  :    CTEXT, DTEXT, CMSGDISC
+------------------------------------------------------------
+CMSG enables or disables automatic transmission of the CTEXT
+or  DTEXT  message  when  your TNC accepts a connect request
+from another station and disconnect it by another station.
+
+If CMSGDISC is OFF, only CTEXT is sent.
+
+If CMSGDISC is ON,  DTEXT is sent.  (If no message is in the
+DTEXT  and  there  is  a message in CTEXT,  the CTXT is sent
+instead of DTEXT and link is disconnected automatically.
+
+
+NOTES:
+
+1) Set CMSG ON to tell callers that you are not available to
+answer calls manually when they connect to your TNC.
+
+2) Set CMSG OFF when available to operate  or  answer  calls
+manually.
+
+
+
+------------------------------------------------------------
+Command   :    CMSGDISC ON/OFF
+Mnemonic  :    CMSGD
+Default   :    OFF
+
+Parameter :    ON   Cause an automatic disconnect upon
+                    completion of CTEXT or DTEXT message.
+
+               OFF  The TNC will remain connected after it
+                    sends the CTEXT except that if there is
+                    a message in DTEXT.
+
+Refer to  :    CTEXT, DTEXT, CMSG
+------------------------------------------------------------
+Normally,  you will want to set CMSGDISC to ON.  If CMSGDISC
+is set to OFF and  another  station  connect  to  you,  your
+station will remain in a connected state until either you or
+the other station issue a DISCONNECT.
+
+This  feature  helps prevent your station from being hang up
+by a distant station that connects you,  but for some reason
+cannot disconnect, such as fading band conditions.
+
+If   both  CMSG  and  CMSGDISC  are  set  to  ON,   link  is
+disconnected after sending out DTEXT message (if there is no
+message in DTEXT, CTEXT will replace the DTEXT).
+
+If no  messages  in  CTEXT  and  DTEXT,  the  link  is  also
+disconnected as normal disconnect.
+
+Normal   disconnect  process  is  performed  regardless  the
+setting of CMSG.
+
+NOTE: If CMSGDISC is set to ON,  make sure that the CMSG  is
+also  ON.    If  the  CMSG  is set to OFF,  the link will be
+disconnected after  you  sends  out  the  first  information
+frame.
+
+NOTE:  CMSGDISC  will  return to OFF state if you initiate a
+connect request to the other station.  It also return to OFF
+state, although you use the K stream switch,
+
+
+
+------------------------------------------------------------
+Command   :    COMMAND n
+Mnemonic  :    COM
+Default   :    $03 <CTRL-C>
+
+Parameter :    n    0 to $7F (0 to 127 decimal) specifies an
+                    ASCII character code.
+
+Refer to  :    CMDTIME, CONVERSE, TRANS
+------------------------------------------------------------
+COMMAND is used to change the Command Mode entry  character.
+You can enter the code in either hex or decimal.
+
+Type  the  COMMAND  character to enter the Command Mode from
+Converse Mode.   You will not see a response if you type the
+Command Mode entry character while the TNC is already in the
+Command Mode.
+
+To enter the Converse Mode type: CONVERSE
+
+Now,  all  characters  typed  on the keyboard and characters
+sent from a disk or tape files  are  transmitted  as  packet
+data.
+
+To return to the Command Mode,  type <CTRL-C>.   The Command
+Mode prompt appears to indicate a  successful  exit  to  the
+Command Mode. The display might look like this:
+
+cmd: CONVERSE
+Hello World! I'm on the air on packet radio! [type <CTRL-C>]
+cmd:
+
+Refer  to  the    CMDTIME    and  TRANS  to  escape from the
+Transparent Mode.
+
+
+
+------------------------------------------------------------
+Command   :    CONMODE CONVERSE/TRANS
+Mnemonic  :    CONM
+Default   :    CONVERSE
+
+Parameter :    CONVERSE  Your TNC automatically enters the
+                         Converse Mode when a connection is
+                         established.
+
+               TRANS     Your TNC automatically enters the
+                         Transparent Mode when a connection
+                         is established.
+
+Refer to  :    CONVERSE, TRANS
+------------------------------------------------------------
+CONMODE selects the mode your TNC uses  after  entering  the
+CONNECTED state.
+
+The  connection  may  result  either  from a connect request
+received from another station,  or a connection initiated by
+a CONNECT command that you have typed.
+
+NOTES:
+
+1) Set CONMODE to CONVERSE for most packet operations.
+
+2)  Set  CONMODE  to  TRANS if you are using the Transparent
+Mode for a bulletin board program,  so that the correct mode
+will  be      entered  when  your  bulletin board receives a
+connect request.
+
+3) If the TNC is already in  Converse  or  Transparent  Mode
+when  the  connection  is  completed,  the  mode will not be
+changed.
+
+
+
+------------------------------------------------------------
+Command   :    CONOK ON/OFF
+Mnemonic  :    CONO
+Default   :    ON
+
+Parameter :    ON   Connect requests from other stations are
+                    accepted.
+
+               OFF  Connect requests from other stations are
+                    not accepted.
+
+Refer to  :    BBSMSGS, USERS
+------------------------------------------------------------
+The CONOK command determines the action that  the  TNC  will
+take  when  it  receives  a  connect  request  from  another
+stations.     If  CONOK  is  set  to  ON,   the  request  is
+acknowledged,  the normal connect message is displayed,  and
+the TNC will enter either the Converse or  Transparent  Mode
+(depending upon how you have CONMODE set.)
+
+If CONOK is set to OFF and the TNC is not in the Transparent
+Mode, it will display a connect request message:
+
+Connect request : <call sign>
+
+The TNC also issue a DM packet, like a "busy signal". to the
+requesting  station.   If you wish,  you can then issue your
+own connect command.   When your TNC receives a DM packet in
+response to a connect request, it will display:
+
+*** <call sign> station busy
+
+If   you   are   connected  with  several  another  stations
+(connected same number of stations set by USERS),  your  TNC
+will respond to the same as above.
+
+If,  for  example,  you  wish  to leave your station on as a
+digipeater,  you could set CONOK to OFF until you are  ready
+to communicate with another station.    When another station
+attempts to connect to your TNC, it will be able to see that
+your station is not available  for  a  connection,  but  can
+still be used as a digipeater.
+
+
+
+------------------------------------------------------------
+Command   :    CONPERM ON/OFF
+Mnemonic  :    CONP
+Default   :    OFF
+
+Parameter :    ON   The current connection on the current
+                    channels is not allowed to enter the
+                    disconnected state.
+
+               OFF  The current channel can be connected to
+                    and disconnected from other stations.
+
+Refer to  :    RELINK, RETRY, TRIES
+------------------------------------------------------------
+When  it  is  ON,  CONPERM  forces  the  TNC to maintain the
+current connection,  even when frames to the  other  station
+exceed  RETRY  attempts for an acknowledgment.   RESTART and
+power off/on cycling do not affect this connected state.
+
+If disconnection is necessary,  set this command to OFF  and
+proceed the normal disconnect sequence.
+
+CONPERM  works  only  when  a connection is established.  It
+functions  on  a  channel-by-channel  basis  when   multiple
+connections are allowed.
+
+CONPERM  allows  connections  on  other  channels to operate
+normally. For example,  automatic disconnect based on RETRY,
+when used under conditions such as:
+
+* Certain networking applications.
+* Meteor scatter.
+* Other noisy, less reliable links.
+
+CONPERM  ON  may  be  advantageous  when you use full-duplex
+continuous mail forwarding or traffic links.
+
+
+
+------------------------------------------------------------
+Command   :    CONSTAMP ON/OFF
+Mnemonic  :    CONS
+Default   :    OFF
+
+Parameter :    ON   Connect status messages are time stamped
+
+               OFF  Connect status messages are not time
+                    stamped.
+
+Refer to  :    DAYTIME, DAYUSA
+------------------------------------------------------------
+CONSTAMP activates time stamping  of  ***  CONNECTED  status
+messages.
+
+If CONSTAMP is ON  and DAYTIME (the TNC's internal clock) is
+set,  date  and  time  information  generated  in the TNC is
+available for bulletin-board programs or other host computer
+applications.
+
+Date and time must be set initially by the  DAYTIME  command
+before time stamping will occur. For example, if CONSTAMP is
+ON and the date and time have been set in the TNC, a connect
+and disconnect sequence appears as follows:
+
+cmd: connect W6YEY
+cmd: 10:55:23:26 *** CONNECTED to W6YEY
+cmd: disconnect
+cmd: 10:55:59:26 *** DISCONNECTED: W6YEY
+
+The  CONNECT  and  DISCONNECT  command can be abbreviated as
+shown below. The results are identical.
+
+cmd: c W6YEY
+10:56:22:18 *** CONNECTED to W6YEY
+cmd: d
+10:56:32:29 *** DISCONNECTED: W6YEY
+
+
+
+------------------------------------------------------------
+Command   :    CONVERSE
+Mnemonic  :    CONV or K
+Default   :    Immediate Command
+Refer to  :    none
+------------------------------------------------------------
+CONVERSE is an immediate command  that  causes  the  TNC  to
+change form the Command Mode to the Converse Mode.
+
+When  the TNC is in the Converse Mode,  all characters typed
+from the keyboard or sent from a disk file are processed and
+transmitted by your radio.
+
+NOTE: To return  the  TNC  to  the  Command  Mode  from  the
+Converse     Mode,type  the  Command  Mode  entry  character
+(default is <CTRL-C>).
+
+
+------------------------------------------------------------
+Command   :    CPACTIME ON/OFF
+Mnemonic  :    CP
+Default   :    OFF
+
+Parameter :    ON   Packet transmit timer  is used in the
+                    Converse Mode.
+
+               OFF  Packet transmit timer is not used in the
+                    Converse Mode.
+
+Refer to  :    PACTIME
+------------------------------------------------------------
+CPACTIME  activates  automatic,   periodic  transmission  of
+packets while the TNC is in the Converse Mode.
+
+CPACTIME   may   be  used  for  several  types  of  computer
+communications bulletin board  or  host  computer  operation
+when you do not want the full Transparent Mode features.
+
+NOTES:
+
+1)  When  CPACTIME  is  ON,  characters  are  packetized and
+transmitted periodically like they are  in  the  Transparent
+Mode.  Local  keyboard  editing  and display features of the
+Converse Mode are available;  software flow control  can  be
+used.
+
+2)  Refer  to the PACTIME command,  (which controls the rate
+and mode  of  packet  assembly)  for  a  discussion  of  how
+periodic packetizing works.
+
+3)  Set  a CR OFF in this mode.  When a CR is ON,  the send-
+packet character is inserted in the  data  being  packetized
+even though it was not typed.
+
+4)  To  include <CR> characters in transmitted packets,  set
+SENDPAC to a character not normally used  (e.g.,  <CTRL-P>);
+the TNC then treats a <CR> as an ordinary character.
+
+Setting  CPACTIME ON transmits your text soon after you type
+it,  in short bursts of a few characters.  The other station
+may break in at will.  Some operators find it easier to chat
+in this mode;  long delays are eliminated while long packets
+are being typed.
+
+
+
+------------------------------------------------------------
+Command   :    CR ON/OFF
+Mnemonic  :    CR
+Default   :    ON
+
+Parameter :    ON   The send-packet character, normally
+                    <CR>, is added to all packets sent in
+                    the Converse Mode.
+
+               OFF  The send-packet characters is not added
+                    to packets.
+
+Refer to  :    SENDPAC
+------------------------------------------------------------
+When CR is set to ON,  all packets  that  are  sent  in  the
+Converse  Mode  will  include,  as the last character of the
+packet,  the send-packet-character.   This character  causes
+the packet to be sent.  If CR is set to OFF, the send-packet
+character  is interpreted only as a command to the TNC,  and
+is not included in the packet.  In addition,  it will not be
+echoed to the terminal.
+
+Set  CR  ON  and  SENDPAC  to $0D for a natural conversation
+mode.   each line is sent whenever you  enter  a  <CR>,  and
+arrives  at  the other station with a <CR> at the end of the
+line.
+
+NOTE: If the other station reports overprinting of the lines
+on his display, you can set LFADD to ON or the other station
+can set AUTOLF to ON.
+
+
+
+------------------------------------------------------------
+Command   :    CSTATUS
+Mnemonic  :    CS
+Default   :    Immediate command
+Refer to  :    CONPERM
+------------------------------------------------------------
+CSTATUS is an immediate command that is used during multiple
+connections. When you type CSTATUS, your monitor displays:
+
+* The number of each logical channel.
+
+* The link state of all ten logical channels.
+
+* The current input/output channel - the one you are using.
+
+* Whether each channel connection is 'permanent.'
+(Refer to CONPERM)
+
+Depending upon your use of multiple  connections  and  USERS
+command, CSTATUS will display the following.
+
+NOT CONNECTED TO ANY STATION
+============================
+cmd: CS
+A stream - IO  Link state is: DISCONNECTED
+B stream -     Link state is: DISCONNECTED
+C stream -     Link state is: DISCONNECTED
+D stream -     Link state is: DISCONNECTED
+E stream -     Link state is: DISCONNECTED
+F stream -     Link state is: DISCONNECTED
+G stream -     Link state is: DISCONNECTED
+H stream -     Link state is: DISCONNECTED
+I stream -     Link state is: DISCONNECTED
+J stream -     Link state is: DISCONNECTED
+K stream -     Link state is: DISCONNECTED
+cmd:
+
+CONNECTED TO ONLY ONE STATION
+=============================
+cmd: CS
+A stream - IO  Link state is: CONNECTED to W6YEY
+B stream -     Link state is: DISCONNECTED
+C stream -     Link state is: DISCONNECTED
+D stream -     Link state is: DISCONNECTED
+E stream -     Link state is: DISCONNECTED
+F stream -     Link state is: DISCONNECTED
+G stream -     Link state is: DISCONNECTED
+H stream -     Link state is: DISCONNECTED
+I stream -     Link state is: DISCONNECTED
+J stream -     Link state is: DISCONNECTED
+K stream -     Link state is: DISCONNECTED
+cmd:
+
+If  you  are  connected  to  several  stations,  the CSTATUS
+command shows your connect status as follows:
+
+CONNECTED TO SEVERAL STATIONS
+============================
+cmd: CS
+A stream - I   Link state is: CONNECTED to W6YEY
+B stream -     Link state is: CONNECTED to W6WNE
+C stream -     Link state is: DISCONNECTED
+D stream -     Link state is: CONNECT in progress
+E stream -     Link state is: DISCONNECTED
+F stream -     Link state is: CONNECTED to W6UOU via K7FT
+G stream -     Link state is: DISCONNECTED
+H stream - O   Link state is: DISCONNECTED
+I stream -     Link state is: DISCONNECTED
+J stream -     Link state is: DISCONNECTED
+K stream -     Link state is: DISCONNECTED
+cmd:
+
+This sample display shows that :
+
+CHANNEL O has the input and output channels - you are  using
+it.
+
+CHANNEL I is the last channel stream you heard a packet.
+
+All  other  channels'  states are shown as they might appear
+with multiple connections.
+
+
+
+------------------------------------------------------------
+Command   :    CTEXT text
+Mnemonic  :    CT
+Default   :    Empty
+
+Parameter :    text Any combination of characters and spaces
+                    up to a maximum of 239 characters.
+
+Refer to  :    CMSG, CMSGDISC, DTEXT, PASS
+------------------------------------------------------------
+CTEXT is the 'automatic answer' text you type into a special
+section of the TNC's memory.
+
+If CMSG is set to ON,  the CTEXT message is sent  as  sooner
+another station connects to your station.
+
+To  type multiple-line CTEXT messages and include a carriage
+return (<CR>) character in your text, use the PASS character
+(<CTRL-V> is the default value)  immediately  preceding  the
+carriage return (refer to the PASS command).
+
+A typical CTEXT message might be:
+
+I am not available right now <CTRL-V><CR>
+Please leave your message, then disconnect <CR>
+
+NOTE: If you enter a text string longer than 239 characters,
+the  following  error  message  appears  and  the command is
+ignored:
+
+?too long
+cmd:
+
+Use a parent sign (%),  or an ampersand  (&)  as  the  first
+character in the CTEXT message to clear the previous message
+without having to type a RESET command.
+
+The  CTEXT  message  will not be sent if the CMSG command is
+set to OFF.
+
+Since the CTEXT is affect by the  setting  of  CMSGDISC  and
+DTEXT, refer to these command to set CTEXT properly.
+
+
+
+------------------------------------------------------------
+Command   :    CWID text
+Mnemonic  :    CWID
+Default   :    Empty
+
+Parameter :    text Any combination text string up to 16
+                    characters.
+
+Refer to  :    CIDCON, CTRL-F
+------------------------------------------------------------
+CWID  is  the  "Mores  Code ID" text.   Maximum length of 16
+characters can be stored in the memory for true  Mores  Code
+identification.
+
+NOTE:  Use a "%" as the first character in the text to clear
+the CWID without issuing the RESET command.
+
+CWID is provided to meet the telecommunication regulation in
+Europe,  but you may find useful application where you  must
+notify your call sign or your identity to the other stations
+who are not in a packet radio community.
+
+
+
+------------------------------------------------------------
+Command   :    DISCONNE
+Mnemonic  :    D
+Default   :    Immediate Command
+
+Parameter :    none
+
+Refer to  :    CONNECT, CONPERM
+------------------------------------------------------------
+DISCONNE is an immediate command that initiates a disconnect
+request to the other station to which you are connected.
+
+If  you disconnect command is successful,  your monitor will
+display:
+
+*** DISCONNECTED^@
+
+Other commands can be  entered  while  a  disconnect  is  in
+progress.   New   connection   are  not  allowed  until  the
+disconnect is completed.
+
+NOTES:
+
+1) If the retry count is exceeded while you are waiting  for
+the  other  station  to acknowledge your disconnect command,
+your TNC automatically switches to the disconnected state.
+
+2) If another disconnect command is entered while  your  TNC
+is trying to disconnect,  the retry count is immediately set
+to the  maximum  number.    In  either  case,  your  monitor
+displays:
+
+*** Retry count exceeded
+*** DISCONNECTED^@
+
+Disconnect  message  are  not  displayed when your TNC is in
+Transparent Mode.
+
+NOTE: ^@ will not be displayed on the ordinary terminal.
+
+
+
+------------------------------------------------------------
+Command   :    DAYTIME date&time
+Mnemonic  :    DA
+Default   :    clock not set
+
+Parameter :    date&time      Current DATE and TIME to set.
+
+Refer to  :    CONSTAMP, DAYUSA, MSTAMP, MBOD
+------------------------------------------------------------
+DAYTIME sets the TNC's internal clock current date and time.
+The date&time parameter is used in the Packet  Mode  by  the
+commands  CONSTAMP  and  MSTAMP to 'time stamp' received and
+monitored messages.
+
+Entries in the "heard" (displayed ny MHEARD  are  also  time
+stamped  if  data&time  has  been set.  The TNC time updates
+continuously by back-up battery.
+
+The clock is not set when the TNC is  first  turned  on,  or
+when  the  TNC  is  rusted  by removing internal jumper plug
+(JPC2),  the DAYTIME command will display:
+
+cmd: DAYTIME
+01/01/90 00:mm:ss
+
+where "mm" and "ss" shows the time since first power  up  to
+the internal clock.
+
+If  you  type DAYTIME without a parameter,  the TNC displays
+date and time information since 01/01/90 00:00:00.
+
+The format for entering the date&time is:
+
+YYMMDDhhmmss
+
+where:
+
+YY is the last two digit of the year. (00-99).
+MM is the two digit month code (01-12).
+DD is date (01-31).
+hh is the hour (00-23).
+mm is the minutes after the hour (00-59)
+ss is the second after the minute (00-59)
+
+Entering the number 0-9 with leading zeros;  all codes  must
+be  exactly  two  digits.    The  TNC  will not echo the new
+string,  thus you must issue DAYTIME command to  confirm  an
+entry.
+
+Example:
+
+cmd: DAYTIME 9210030935
+cmd: DAYTIME
+92/10/03 09:35:10
+
+
+
+------------------------------------------------------------
+Command   :    DAYSTAMP ON/OFF
+Mnemonic  :    DAYS
+Default   :    OFF
+
+Parameter :    ON   The DATE is included in CONSTAMP and
+                    MSTAMP.
+
+               OFF  Only the TIME is included in CONSTAMP
+                    and MSTAMP.
+
+Refer to  :    TIME, DAYUSA, DAYTIME
+------------------------------------------------------------
+DAYSTAMP activates the date in CONSTAMP and MSTAMP.
+
+Set  DAYTSAMP  to  ON when you want a dated record or packet
+channel activity.
+
+
+
+------------------------------------------------------------
+Command   :    DAYUSA ON/OFF
+Mnemonic  :    DAYU
+Default   :    ON
+
+Parameter :    ON   Date is displayed in a mm/dd/yy format.
+
+               OFF  Date is displayed in a dd-mm-yy format.
+
+Refer to  :    CONSTAMP, DAYTIME, MSTAMP
+------------------------------------------------------------
+The DAYUSA command allows you to determines  the  format  of
+the TNC's date display. If DAYUSA is set to ON, the standard
+United Sates format is used.   If DAYUSA is set to OFF,  the
+standard European format is used.   The command affects  the
+format of the date display that is used in "time stamps.  It
+also  affects  the  display when you enter a DAYTIME command
+without parameters.
+
+If DAYUSA is set to ON,  October 3,  1992  and  09:35:10  AM
+would be displayed as:
+
+cmd:DAYUSA ON
+DAYUSA was ON
+cmd:DAYTIME
+10/03/92 09:35:10
+
+If  DAYUSA  is  set to OFF,  the same date and time would be
+displayed as:
+
+cmd:DAYUSA OFF
+DAYUSA was ON
+cmd:DAYTIME
+03-Oct-92 09:35:10
+
+
+
+------------------------------------------------------------
+Command   :    DELETE ON/OFF
+Mnemonic  :    DEL
+Default   :    ON
+
+Parameter :    ON   The <DELETE> ($7F) key is used for
+                    editing your typing.
+
+               OFF  The <BACKSPACE> ($08) key is used for
+                    editing your typing.
+
+Refer to  :    BKONDEL, CANLINE
+------------------------------------------------------------
+Use the DELETE command to select the key to use for deleting
+while editing.
+
+Type the selected DEL key to delete the last character  from
+the input line.
+
+You  cannot  use  the  DEL  key  to  delete  text before the
+beginning of a line.   Use the PASS character to delete <CR>
+characters that have been typed into the text.
+
+The BKONDEL command controls how the TNC indicates deletion.
+
+To  see  a  corrected  display  of  the  current  line after
+deleting  characters,  type  the  redisplay-line  character,
+which is set by the REDISPLA command.
+
+
+
+------------------------------------------------------------
+Command   :    DIGIPEAT ON/OFF
+Mnemonic  :    DIG
+Default   :    ON
+
+Parameter :    ON   The TNC will digipeat packets, if
+                    another station requests it.
+
+               OFF  The TNC will not digipeat packets.
+
+Refer to  :    none
+------------------------------------------------------------
+When  this  parameter  is  set  to  ON,  any  packet that is
+received with your TNC's call sign (including SSID)  in  the
+digipeater list of its address field will be re-transmitted.
+Each  station that is included in the digipeater list relays
+the packet,  in turn,  and will make the packet so  that  it
+will not accidentally relay it twice (unless it is requested
+to  do so.) In addition,  all stations will relay the packet
+in the correct order.   Digipeating takes place concurrently
+with other TNC operations and does not interfere with normal
+operation of a packet station.
+
+Many stations set DIGIPEAT to ON most of the time.   You may
+wish to set it to OFF if you are not at  home,  or  if  your
+transmitter/receiver relay makes enough noise to wake you up
+at night.
+
+The   HID   command  enables  automatic  re-transmission  of
+identification  packets  when  your  station   acts   as   a
+digipeater.
+
+
+
+------------------------------------------------------------
+Command   :    DISCONE ON/OFF
+Mnemonic  :    DISCONE
+Default   :    ON
+
+Parameter :    ON   Add CTRL-@ ($00) after *** DISCONNECTED
+                    message.
+
+               OFF  CTRL-@ ($00) is not added after
+                    *** DISCONNECTED message.
+
+Refer to  :    none
+------------------------------------------------------------
+Some  commercially  available packet software determines the
+disconnect state by the character  code  $00  (CTRL-@).  Use
+DISCONE  command to meet your terminal software requirement.
+Some display terminal will not display $00 (CTRL-@).
+
+
+
+------------------------------------------------------------
+Command   :    DISPLAY (class)
+Mnemonic  :    DISP
+Default   :    Immediate Command
+
+Parameter :    class     Optional parameter identifier, one
+                         of the following.
+
+               (A)synchronous RS232C port parameters.
+               (B)oard display message board parameters.
+               (C)haracter display special characters.
+               (H)ealth display health parameters.
+               (I)d display ID parameters.
+               (L)ink display Link parameters.
+               (M)onitor display monitor parameters.
+               (T)iming display timing parameters.
+------------------------------------------------------------
+If you type DISPLAY without a class parameter,  all  control
+parameters and their current values are displayed.   You can
+specify the optional parameter class to display subgroups of
+related parameters.   To display  an  individual  parameter,
+enter the parameter name without an option.
+
+Example :
+
+cmd: DISPLAY ASYNC  (or A)
+
+All asynchronous port (RS-232C) parameters are displayed.
+
+
+
+
+------------------------------------------------------------
+Command   :    DTEXT text
+Mnemonic  :    DT
+Default   :    Empty
+
+Parameter :    text Any combination of characters and spaces
+                    up to a maximum of 239 characters.
+
+Refer to  :    CMSG, CMSGDISC, CTEXT, PASS
+------------------------------------------------------------
+DTEXT is the 'automatic answer' text you type into a special
+section of the TNC's memory.
+
+If  CMSG is set to ON,  the DTEXT message is sent as soon as
+another station disconnects to your station.
+
+To type multiple-line DTEXT messages and include a  carriage
+return (<CR>) character in your text, use the PASS character
+(<CTRL-V>  is  the  default value) immediately preceding the
+carriage return (refer to the PASS command).
+
+A typical DTEXT message might be:
+
+I am not available right now <CTRL-V><CR>
+Please leave your message, then disconnect <CR>
+
+NOTE: If you enter a text string longer than 239 characters,
+the following error  message  appears  and  the  command  is
+ignored:
+
+?too long
+cmd:
+
+Use  a  parent  sign  (%),  or an ampersand (&) as the first
+character in the DTEXT message to clear the previous message
+without having to type a RESET command.
+
+The DTEXT message will not be sent if the CMSG  or  CMSGDISC
+command is set to OFF.
+
+
+
+------------------------------------------------------------
+Command   :    DWAIT n
+Mnemonic  :    DW
+Default   :    16
+
+Parameter :    n    0 - 250 specifies default wait time in
+                    10 mS intervals.
+
+Refer to  :    TXDELAY, AXDELAY, AXHANG
+------------------------------------------------------------
+DWAIT helps to avoid collisions with digipeated packets.
+
+Unless  the  TNC  is waiting to transmit digipeated packets,
+DWAIT forces the TNC to pause after last hearing data on the
+channel,  for the duration of the DWAIT (Default Wait) time,
+before it begins its transmitter key-up sequence.
+
+Wherever possible, the value of DWAIT should be agreed on by
+all  stations  in  a local area when digipeaters are used in
+the  area.   The  best   value   will   be   determined   by
+experimenting.
+
+DWAIT  is  a  function  of  the key-up time (TXDELAY) of the
+digipeater  stations  and  helps   alleviate   the   drastic
+reduction  of  throughput  that  occurs  on  a  channel when
+digipeated packets suffer collisions.
+
+DWAIT  is  necessary  because  digipeated  packets  are  not
+retired  by the digipeater,  but are always restarted by the
+originating station.   When all stations specify  a  default
+wait time,  and right value of "n" is chosen, the digipeater
+captures the frequency every time it has  data  to  send.  -
+digipeated packets are sent without this delay.
+
+NOTE:  The  TNC-210  set  DWAIT  value  to "0" automatically
+regardless the value set by DWAIT.
+
+TYPE OF OPERATION        TIME (mS)      DWAIT VALUE
+=================        =========      ===========
+
+     Digipeaters         00
+     Local Keyboard      160            16 (default)
+     PBBS                320            32
+     File Transfer       480            48
+
+
+
+------------------------------------------------------------
+Command   :    ECHO ON/OFF
+Mnemonic  :    E
+Default   :    ON
+
+Parameter :    ON   Characters received from the computer or
+                    terminal are echoed by the TNC.
+
+               OFF  Characters are not echoed.
+
+Refer to  :    none
+------------------------------------------------------------
+The ECHO command controls local echoing by the TNC  when  it
+is  in  the  Command  or  Converse  Mode.   Local echoing is
+disable in the Transparent Mode.
+
+Set ECHO ON if you do not see your  typing  appear  on  your
+display.
+
+SET ECHO OFF if you see each character you typed doubled.
+
+ECHO  is  set correctly when you see the characters you type
+display correctly.
+
+
+
+------------------------------------------------------------
+Command   :    ESCAPE ON/OFF
+Mnemonic  :    ES
+Default   :    OFF
+
+Parameter :    ON   The <ESCAPE> character ($1B) is output
+                    as "$"($24).
+
+               OFF  The <ESCAPE> character is output as
+                    <ESCAPE> ($1B).
+
+Refer to  :    AFILTER, MFILTER
+------------------------------------------------------------
+The ESCAPE command selects the character to be  output  when
+an  <ESCAPE>  character  is to be sent to the terminal.  The
+<ESCAPE> translation is disabled in Transparent Mode.
+
+The ESCAPE character  selection  is  provided  because  some
+computers  and  terminal  emulators  interpret  the <ESCAPE>
+character as a special command prefix.   Such terminals  may
+alter their displays depending upon the characters following
+the <ESCAPE>.
+
+Set  ESCAPE  ON  if  you  have  such  a  terminal  to  avoid
+unexpected text strings from other packeteers.
+
+Refer to the AFILTER and MFILTER  commands  for  information
+about    character    stripping   (rather   than   character
+translation) in monitored packets.
+
+
+
+
+------------------------------------------------------------
+Command   :    FLOW ON/OFF
+Mnemonic  :    F
+Default   :    ON
+
+Parameter :    ON   Type-in flow control is active.
+
+               OFF  Type-in flow control is not active.
+
+Refer to  :    XFLOW, RSFLOW, FLOVER
+------------------------------------------------------------
+When FLOW is ON,  type-in  flow  control  is  active.    Any
+character  typed on your keyboard causes output from the TNC
+to  the  terminal  to  stop  until  any  of  the   following
+conditions exist.
+
+A packet is forced (in the Converse Mode).
+
+A line is completed (in the Converse Mode).
+
+The packet length (See PACLEN) is exceeded.
+
+The terminal output buffer fills up.
+
+Canceling  the  current  command  or  packet  or  typing the
+redisplay-line  character  also  causes  output  to  resume.
+Type-in flow control is not used in the Transparent Mode.
+
+Setting  FLOW  ON  prevents  inbound  or  received data from
+interfering with your keyboard data entry.   If you (and the
+person  you  are talking to) normally wait for a packet from
+the other end before starting to respond,  you can set  FLOW
+OFF.
+
+Some  packet  bulletin  board  programs (PBBS) may work best
+with FLOW set to OFF.
+
+Some computers with "software UARTs" may be unable  to  send
+and  receive  data at the same time.   If you are using that
+type of computer, set FLOW to ON.
+
+
+
+------------------------------------------------------------
+Command   :    FILE
+Mnemonic  :    FI
+Default   :    Immediate Command
+
+Refer to  :    "Using the Bulletin Board Feature" in the
+               Operating Instruction Manual.
+------------------------------------------------------------
+FILE command displays a BBS files.
+
+
+
+
+------------------------------------------------------------
+Command   :    FLOVER n
+Mnemonic  :    FL
+Default   :    0
+
+Parameter :    n    0 to 120 specifies the time in one
+                    minute intervals.
+
+Refer to  :    RSFLOW, XFLOW, FLOW, START, STOP
+------------------------------------------------------------
+FLOVER specifies the start period for data discarding  after
+the TNC's receiving buffer is full.  If FLOVER is specified,
+it  ignore  the  hard  flow  control (DTR and RTS) and start
+discarding the receiving data.
+
+FLOVER command is useful when operating  with  a  BBS  while
+computer terminal is OFF.
+
+Because, once the receiving buffer is full while computer is
+OFF,   the   BBS   will   hang-up  and  no  further  command
+instructions cannot be received.   Use FLOVER to  erase  the
+new incoming data automatically.
+
+When  the  receiving buffer become full,  the TNC respond to
+the other station with RNR frame,  and TNC starts discarding
+the receiving data after the period set by the FLOVER.
+
+NOTE:  Do  not  set  FLOVER smaller than 6.   If you set the
+value less than 6,  the TNC's flow control to  the  terminal
+may not be worked properly.
+
+
+
+------------------------------------------------------------
+Command   :    FRACK n
+Mnemonic  :    FR
+Default   :    3
+
+Parameter :    n1 to 15, specifying frame acknowledgment
+               time-out in one-second intervals.
+
+Refer to  :    none
+------------------------------------------------------------
+FRACK is the FRame ACKnowledgement time in seconds that your
+TNC  will wait for acknowledgement of the last-sent protocol
+frame before resending or "retiring" that frame.
+
+After sending a packet requiring  acknowledgement,  the  TNC
+waits  for  FRACK  seconds  time-out before incrementing the
+retry counter and sending the frame again.   If  the  packet
+address  includes digipeater instructions,  the time between
+retries is adjusted to:
+
+Retry interval = "n" x (2n x m +1)
+where m is the number of intermediate relay stations.
+
+When a packet is retries, a random wait time is added to any
+other wait times in use.   This avoid lockups in  which  two
+packet  stations  repeatedly send packets which collide with
+each other.
+
+Recommended value for the FRACK is as follows:
+
+TYPE OF OPERATION        FRACK VALUE
+=================        ===========
+
+Local Keyboard           3 (default)
+Local Keyboard           6 (when the channel is congested)
+PBBS                     6
+File Transfer            10
+
+
+
+------------------------------------------------------------
+Command   :    FULLDUP  ON/OFF
+Mnemonic  :    FU
+Default   :    OFF
+
+Parameter :    ON   Full duplex mode is ENABLED.
+
+               OFF  Full duplex mode is DISABLED.
+
+Refer to  :    none
+------------------------------------------------------------
+When full-duplex mode is disabled,  the TNC makes use of the
+DCD  (Data  Carrier  Detect)  signal from its modem to avoid
+collisions;  the TNC  acknowledges  multiple  packets  in  a
+single transmission with a single acknowledgement.
+
+When  full-duplex mode is enabled,  the TNC ignores  the DCD
+signal and acknowledges packets individually.
+
+Full-duplex  operation  is  useful  for  full-duplex   radio
+operation, such as through AO-13 or JAS-1B. It should not be
+used  unless  both  your  station  and the other station can
+operate in full-duplex.
+
+You may also find full-duplex mode useful for  some  testing
+operations, such as analog or digital loopback tests.
+
+
+
+------------------------------------------------------------
+Command   :    HBAUD n
+Mnemonic  :    HB
+Default   :    1200
+
+Parameter :    n    Values specifying the rate or signaling
+                    speed in bauds from the TNC to the
+                    radio.
+
+Refer to  :    none
+------------------------------------------------------------
+HBAUD  sets  the radio (on-air) baud rate only in the packet
+operating mode.   HBAUD has no relationship to your computer
+terminal program,s baud rate.
+
+You must use the same radio data rate as the other station.
+
+NOTE:  Always set HBAUD to 1200.   The TNC will accept other
+numbers, but the TNC's modem port is not acceptable of using
+anything other than 1200 baud.
+
+Example:HBAUD 1200
+
+NOTE: Modern commercial and amateur  terminology  no  longer
+always  refer to the speeds or data rate in "WPM".  The term
+"bauds" is accepted for FSK and AFSK operations using  mono-
+bit  data.   In these case,  the terms "bauds" and "bit-per-
+second" mean the same thing.  Either term may be used.
+
+
+
+------------------------------------------------------------
+Command   :    HEADERLN ON/OFF
+Mnemonic  :    HE
+Default   :    OFF
+
+Parameter :    ON   The header for a monitored packet is
+                    printed on a separate line from the
+                    packet text.
+
+               OFF  The header add the text of monitored
+                    packets are printed on the same line.
+
+Refer to  :    MRPT, MSTAMP
+------------------------------------------------------------
+HEADERLN affects the  display  of  monitored  packets.  When
+HEADERLN  is  OFF,  the  address information is shown on the
+same line as the packet text:
+
+W6YEY>W6UOU: Go ahead and transfer the file.
+
+When HEADERLN is ON,  the address is shown,  followed  by  a
+<CR><LF>that puts the packet text on a separate line:
+
+W6YEY>W6UOU:
+Go ahead and transfer the file
+
+If MRPT or MSTAMP are ON,  set HEADERLN ON; long headers may
+extend across your screen or page when these  functions  are
+active.
+
+
+
+------------------------------------------------------------
+Command   :    HEALLED  ON/OFF
+Mnemonic  :    HEAL
+Default   :    OFF
+
+Parameter :    ON   Automatically runs diagnostic tests on
+                    the microprocessor when you turn the
+                    unit on. If all checks are satisfactory,
+                    it alternately lights the CON and STA
+                    LEDs.
+
+               OFF  Does not run diagnostic test and no LEDs
+                    will light.
+
+Refer to  :    MAIL, SOFTDCD
+------------------------------------------------------------
+Allows you to make a quick check of the TNC's operation.  If
+you set HEALLED to ON and the LEDs do not alternately flash,
+check  for  proper  power  supply  or  battery  voltage  and
+connections.   If the LEDs do not flash,  the TNC's internal
+software has failed.
+
+
+NOTE:HEALLED  command  allows  the  user  to  redefine   the
+functions of the two CPU controllable LEDs (i.e.  the STAtus
+and CONnect LEDs).  When HEALLED is set to ON,  the two LEDs
+flash in a seeming random fashion. At a glance, the user may
+make  a judgment on whether the software has crashed,  since
+the LEDs will probably  not  flash  if  the  software  falls
+catastrophically.
+
+With HEALLED set to OFF, the LEDs function as before.
+
+
+
+------------------------------------------------------------
+Command   :    HID ON/OFF
+Mnemonic  :    HI
+Default   :    OFF
+
+Parameter :    ON   Your TNC sends HDLC identification as
+                    digipeater.
+
+               OFF  Your TNC does not send HDLC
+                    identification.
+
+Refer to  :    UNPROTO, MYCALL, ID, MYALIAS
+------------------------------------------------------------
+The  HID  command activates or disables your TNC's automatic
+periodic transmission of identification packets when  it  is
+operating as digipeater.  This identification consists of an
+un-sequenced  I-frame  with  your   station   identification
+(MYCALL) and MYALIAS in the data field.
+
+Set  HID ON to force your TNC to send an ID packet every 9.5
+minutes when it is being used as digipeater.
+
+The HID identification  packet  is  addressed  to  the  "CQ"
+address set by the UNPROTO command.
+
+Your  station  identification  is the call sign you have set
+with the MYCALL command, with "digipeater" appended.
+
+W6YEY >ID: W6WNE/R
+
+NOTE: You cannot change the  9.5-minute  automatic  interval
+timing.
+
+
+
+------------------------------------------------------------
+Command   :    ID
+Mnemonic  :    I
+Default   :    Immediate Command
+
+Parameter :    none
+
+Refer to  :    UNPROTO, MYCALL, HID
+------------------------------------------------------------
+ID   is   an   immediate   command   that  sends  a  special
+identification packet.  The ID command allows you to send  a
+final  identification  packet when you take your station off
+the air.
+
+Note that HID must set on.  ID forces a final identification
+packet  to  be sent when a digipeater station is being taken
+off the air.   The identification consists of an  unnumbered
+I-Frame, with its data filed containing MYALIAS (if any) and
+your MYCALL station identification and characters "/R".
+
+The  ID identification packet is sent only if the digipeater
+has transmitted since the last automatic identification.
+
+
+
+------------------------------------------------------------
+Command   :    K
+Mnemonic  :    K
+Default   :    Immediate Command
+
+Parameter :    none
+
+Refer to  :    Same as CONVERSE.  Refer to CONVERSE
+------------------------------------------------------------
+
+
+
+
+------------------------------------------------------------
+Command   :    KILL
+Mnemonic  :    KI
+Default   :    Immediate Command
+
+Refer to  :    "Using the Bulletin Board Feature" in the
+               Operating Instruction Manual.
+------------------------------------------------------------
+KILL command erase the file or message in a BBS.
+
+
+
+
+------------------------------------------------------------
+Command   :    KISS ON/OFF
+Mnemonic  :    KISS
+Default   :    OFF
+
+Parameter :    ON   Your TNC operates as a KISS mode to
+                    comply with TCP/IP protocol.
+
+               OFF  Your TNC operates as a normal AX.25
+                    Level 2 terminal node controller.
+
+Refer to  :    RESTART
+------------------------------------------------------------
+KISS command is provided if you wish  to  operate  your  TNC
+with the KA9Q Internet Program (TCP/IP).   If you enter this
+command,  you must issue RESTART  command  or  power  on/off
+reset to enable your TNC.  The STA and CON LEDs blinks three
+times indicating that your TNC is in KISS mode.
+
+NOTE:  If  you  do not terminate  KISS operation through the
+KISS software program,  and if you turn your TNC  OFF,  next
+time  you  turn  your  TNC  ON  will  initialize  all memory
+contents and return to a factory default value.
+
+Refer  to  the  operation  instructions  according  to   the
+instruction comes with KA9Q NET - Executable and source code
+for  the  NET  version  of TCP/IP by Phil Karn,  KA9Q,  with
+enhancements by Joe Buswell, K5JB or Introduction to TCP/IP.
+These software is available from Tucson Amateur Packet Radio
+Corporation,  or you can be downloaded from HAM-NET  through
+CompuServe etc.
+
+
+
+------------------------------------------------------------
+Command   :    LCOK ON/OFF
+Mnemonic  :    L
+Default   :    ON
+
+Parameter :    ON   Cause the TNC to send lower case
+                    characters to the computer or terminal.
+
+               OFF  Cause the TNC to translate lower case
+                    characters to upper case.
+
+Refer to  :    none
+------------------------------------------------------------
+If  LCOK  is  OFF,  lower  case characters are translated to
+upper case before they are sent  to  the  terminal.    Input
+characters and echo are not translated.
+
+NOTE: Case translation is disabled in Transparent Mode.
+
+If  your  computer  or  terminal  does not accept lower case
+characters,  it may react strangely when the TNC sends  them
+to  it.   The LCOK command allows you to translate all lower
+case characters that are received in  packets,  as  well  as
+messages from the TNC, to upper case.
+
+Since  echoes  of the characters you type are not translated
+to uppercase,  you can use this command to make your display
+easier  to  read when you converse in a connected mode.   If
+you and the other station set LCOK to OFF, you can each type
+your own message in  lower-case,  and  the  other  station's
+incoming packets will be in upper case. This makes it easier
+to distinguish between incoming and outgoing packets.
+
+
+
+------------------------------------------------------------
+Command   :    LCALLS     call1,      call2     ..     call8
+Mnemonic  :    LCA
+Default   :    Empty
+
+Parameter :    call Call sign list. Up to 8 calls, separated
+                    by commas.
+
+Refer to  :    BUDLIST
+------------------------------------------------------------
+LCALLS uses arguments to determine how your TNC monitors the
+packet channels and displays information -  which  station's
+packet will be displayed.
+
+Each  call sign may include an optional SSID.   LCALLS works
+with BUDLIST and it allows  selective  monitoring  of  other
+packet stations.  LCALLS and BUDLIST determine which packets
+will be displayed when you have set MONITOR ON.
+
+BUDLIST specifies whether the call signs in the list are the
+stations that you want to ignore or, alternatively, they are
+the only stations that you want to monitor.
+
+If you want to monitor only for packets from a limited list,
+you may enter your selected stations in the LCALLS,  and set
+BUDLIST to ON.
+
+If you want to ignore packets from a limited list,  you  may
+list  the call signs to ignore in the LCALLS and set BUDLIST
+to OFF.
+
+
+
+------------------------------------------------------------
+COMMAND   :    LCSTREAM ON/OFF
+Mnemonic  :    LCS
+Default   :    ON
+
+Parameter :    ON   Cause the character that immediately
+                    follows the STREAMSWITCH character to be
+                    changed uppercase, before it is acted
+                    upon.
+
+               OFF  Causes the character that immediately
+                    follows the STREAMSWITCH character to be
+                    acted upon normally.
+
+Refer to  :    STREAMSW
+------------------------------------------------------------
+When LCSTREAM is set to ON the  character  that  immediately
+follows  the STREAMSWITCH character is changed to upper case
+before it is acted upon as  a  parameter  to  that  command.
+Since  you  can specify the stream you desire with either an
+uppercase or  a  lower-case  letter,  the  LCSTREAM  command
+simplifies management of multiple connections.
+
+When LCSTREAM is set to OFF,  the case of the character that
+immediately follows the STREAMSWITCH character is important.
+NOTE: A lower-case letter will result in an error message.
+
+
+
+------------------------------------------------------------
+Command   :    LFADD ON/OFF
+Mnemonic  :    LF
+Default   :    OFF
+
+Parameter :    ON   A <LF> character is added to outgoing
+                    packets following each <CR> transmitted
+                    in the packet.
+
+               OFF  No <LF> is added to outgoing packets.
+
+Refer to  :    AUTOLF
+------------------------------------------------------------
+LFADD is similar to AUTOLF,  except the line feed characters
+are added to outgoing packets instead of the displayed text.
+This  feature  helps  make  your  TNC  compatible with other
+packet radio TNCs.
+
+Set LFADD to ON if the station you  are  communicating  with
+reports that your packets are being overprinted.  NOTE: This
+character is disabled in the Transparent Mode.
+
+
+
+------------------------------------------------------------
+Command   :    LFIGNORE ON/OFF
+Mnemonic  :    LFI
+Default   :    OFF
+
+Parameter :    ON   Causes the TNC to ignore <LF> characters
+                    it receives from another station.
+
+               OFF  Causes the TNC to print any <LF>
+                    characters it receives.
+
+Refer to  :    none
+------------------------------------------------------------
+Set  LFIGNORE  to  ON if you feel you are receiving too many
+line feeds from another station.   NOTE: This command has no
+effect in the Transparent Mode.
+
+
+
+------------------------------------------------------------
+Command   :    LIST
+Mnemonic  :    L
+Default   :    Immediate Command
+
+Parameter :    None
+
+Refer to  :    "Using the Bulletin Board Feature" in the
+               Operating Instruction Manual.
+------------------------------------------------------------
+LIST command display the files or message in a BBS.
+
+
+
+------------------------------------------------------------
+Command   :    LOG
+Mnemonic  :    LOG
+Default   :    Immediate Command
+
+Parameter :    None
+
+Refer to  :    "Using the Bulletin Board Feature" in the
+               Operating Instruction Manual.
+------------------------------------------------------------
+LOG  command display the list of stations that are connected
+to a BBS.
+
+
+
+------------------------------------------------------------
+Command   :    MONITOR ON/OFF
+Mnemonic  :    M
+Default   :    ON
+
+Parameter :    ON   Packet activity is monitored.
+
+               OFF  Packet activity is not monitored.
+
+Refer to  :    BUDLIST, LCALLS, MALL, MCON, MRPT, MSTAMP,
+               MHEADERLN, MTR, RSFLOW
+------------------------------------------------------------
+If MONITOR  is  set  to  ON  and  the  TNC  is  not  in  the
+Transparent   Mode,   packets   not  addressed  to  you  are
+displayed.   The addresses in the packet are displayed along
+with the data portion of the packet. For example"
+
+W6YEY > W6UOU-7: I am ready to transfer the file.
+
+The  call  sign are separated by a ">" and the substation ID
+field (SSID) is displayed if it is other than 0.   The MALL,
+BUDLIST,  and LCALLS commands determine which packets are to
+be monitored.   The MCON command controls the action of  the
+monitor mode when the TNC is in a connected state.
+
+All monitor functions are disabled in the Transparent Mode.
+
+HEADERLEN  controls  the format of the monitor display.   If
+you wish to see the station address on a separated line from
+the text,  set HEADERLN ON.   MRPT enables monitoring of the
+digipeater routing as well as source and destination address
+for each packet.
+
+MSTAMP  includes  a  time stamp with the address if you have
+set DAYTIME.
+
+
+
+------------------------------------------------------------
+Command   :    MALL ON/OFF
+Mnemonic  :    MA
+Default   :    ON
+
+Parameter :    ON   Both connected and non-connected packets
+                    are monitored.
+
+               OFF  Only non-connected packets are
+                    monitored.
+
+Refer to  :    MONITOR, BUDLIST, LCALLS, MTCALL, MRCALL, MTR
+------------------------------------------------------------
+The MALL command determines the class of monitored  packets.
+When  MALL  is  set  to  OFF,  only packets from unconnected
+stations determined by BUDLIST, LCALLS,  MTCALL,  MRCALL and
+MTR are displayed.   This is the normal setting when you are
+communicating to group of unconnected stations.
+
+When MALL is set to ON,  all eligible frames are  displayed,
+including  those  that  are sent between two other connected
+stations.
+
+The MALL command is handy  for  diagnostic  purpose  or  for
+general monitoring.
+
+
+
+------------------------------------------------------------
+Command   :    MAIL ON/OFF
+Mnemonic  :    MAI
+Default   :    OFF
+
+Parameter :    ON   Enables incoming mail indicator.
+
+               OFF  Disables incoming mail indicator.
+
+Refer to  :    MBOD, MYMCALL
+------------------------------------------------------------
+When  MAIL  is  set to ON,  STA and LED light up to tell you
+that you have a message in the bulletin board.
+
+This feature allows you to  know  the  incoming  mail  while
+computer is OFF.
+
+The indicator works with the following conditions:
+
+1) When TNC is powered up and if there is a message left for
+you.
+
+2)  When the other station disconnect the link after he left
+the message,
+
+3) If there is a message for you and you turn  MAIL  command
+to ON.
+
+The  MAIL  indicator  extinguish  when  you  change the MAIL
+command to OFF, or your mail is erased.
+
+
+
+------------------------------------------------------------
+Command   :    MAXFRAME n
+Mnemonic  :    MAX
+Default   :    4
+
+Parameter :    n    1 to 7 signifying a number of packet
+                    frames.
+
+Refer to  :    PACLEN, FULLDUP
+------------------------------------------------------------
+MAXFRAME sets an upper limit on unacknowledged packets  your
+TNC  permits  on  the radio link at any one time.   MAXFRAME
+also sets the maximum number of contiguous packets your  TNC
+will send during any given transmission.
+
+If   some  but  not  all  of  the  outstanding  packets  are
+acknowledged,  a smaller number may be transmitted the  next
+time, or new frames
+may  be  included  in  the re-transmission so that the total
+number of unacknowledged packet frame does not exceed "n".
+
+The best value of MAXFRAME depends upon your  local  channel
+conditions.  In  most case of keyboard-to-keyboard direct or
+local operation (link that  do  not  require  going  through
+digipeaters), you can use the default value MAXFRAME 4.
+
+When  the  amount  of packet traffic,  the path in use,  the
+digipeaters involved,  or other  variables  not  under  your
+control make packet operation difficult (as shown by lots of
+retries!),  you  can  actually  improve  your  throughput by
+reducing MAXFRAME.
+
+If packet traffic is heavy  or  the  path  is  poor,  reduce
+MAXFRAME to 3 or 2.
+
+If  you  are  sharing  the  channel  with  several PBBSs and
+digipeaters,  or when you are working a PBBSs or other  type
+of host communications, reduce MAXFRAME to 1.
+
+If  the  radio link is good,  an optimal relationship exists
+between the parameters set by these commands,  so  that  the
+maximum number of characters outstanding does not exceed the
+receive buffer space of the TNC receiving data.
+
+
+------------------------------------------------------------
+Command   :    MBOD ON/OFF
+Mnemonic  :    MB
+Default   :    OFF
+
+Parameter :    ON   Turn the message (bulletin) board on.
+
+               OFF  Turn the message (bulletin) board off.
+
+Refer to  :    MYMCALL, DAYTIME
+------------------------------------------------------------
+This  TNC  has  built-in bulletin board capability.   To use
+this feature, you must set MBOD to ON.   Before you do this,
+however,  make  sure that you have entered an exclusive call
+sign in MYMCALL.
+
+NOTE: To use the bulletin board feature,  you must  enter  a
+call sign into MYMCALL.
+
+
+
+------------------------------------------------------------
+Command   :    MCON ON/OFF
+Mnemonic  :    MC
+Default   :    OFF
+
+Parameter :    ON   Monitors packets from all other stations
+                    while your TNC is connected to another
+                    station.
+
+               OFF  Only monitors packets from the station
+                    you are connected to.
+
+Refer to  :    MALL, MONITOR
+------------------------------------------------------------
+Turn  MCON  ON  to  monitor  other stations on the frequency
+while your TNC is connected to another station.
+
+
+
+------------------------------------------------------------
+Command   :    MCOM  ON/OFF
+Mnemonic  :    MCOM
+Default   :    OFF
+
+Parameter :    ON   Connected, disconnected, information, UA
+                    (Unnumbered Acknowledgement), and DM
+                    (busy signal) frames are monitored.
+
+               OFF  Only information frames are monitored.
+
+Refer to  :    MALL, MONITOR
+------------------------------------------------------------
+When MCON is set to  ON,  both  connected  and  disconnected
+frames  are  displayed,  if  MONITOR  is  also  set  to  ON.
+Connected, disconnected,  information,  UA and DM frames are
+indicated by <C>,  <D>,  <I>,  <UA>, and <DM>, respectively.
+Like other monitor commands, stations that are monitored are
+determined by BUDLIST and LCALLS.
+
+Set MCOM to OFF to  display  only  I  frames  (packets  that
+contain user information).
+
+
+
+------------------------------------------------------------
+Command   :    MFILETER n1[, n2[,n3[,n4]]]
+Mnemonic  :    MFI
+Default   :    $00
+
+Parameter :    0 to $7F0 (0 to 127 decimal) specifies an
+               ASCII code. Up to four characters may be
+               specified.
+
+Refer to  :    AFILTER
+------------------------------------------------------------
+Use  MFILTER  to  select  characters  to  be "filtered",  or
+excluded from  monitored  packets.  Parameters  "n1,"  "n2",
+etc.,  are  the  ASCII  codes for the characters you want to
+filter.   You can enter up to four characters in either  hex
+or decimal.
+
+1)  To  prevent  a  <CTRL-L>  character  from  clearing your
+screen, set MFILTER 12.
+
+2) To eliminate  <CTRL-Z>  character,  which  some  computer
+interpret as end-of-file markers, set MFILTER 26.
+
+3)  To  eliminate  <CTRL-G>  characters,   which  beep  your
+computer or terminal, set MFILTER 7.
+
+
+
+------------------------------------------------------------
+Command   :    MHEARD
+Mnemonic  :    MH
+Default   :    Immediate Command
+
+Parameter :    none
+
+Refer to  :    MSTAMP, MHCLEAR
+------------------------------------------------------------
+MHEARD is an immediate  command  that  displays  a  list  of
+stations  heard  since  the  last time the MHEARD buffer was
+cleared.
+
+Use the MHC command to clear the MHEARD buffer.
+
+The maximum number of heard stations that can be  logged  is
+18.    If  more  stations  are  heard,  earlier  entries are
+discarded.
+
+NOTES:
+
+1) Stations that are heard directly are not marked with a  *
+in the heard log.
+
+2)  Stations  that  have  been  repeated by a digipeater are
+marked.
+
+3) If you clear the list of stations heard at the  beginning
+of a session,  you can use this command to keep track of the
+stations that are active during that period.
+
+4) Logging of stations heard is disabled when PASSALL is ON.
+
+When DAYTIME has been used to set the date and time, entries
+in the heard log are time stamped.  When DAYSTAMP is ON, the
+date is shown before the time.  An actual sample  of  MHEARD
+functions with clock set is shown below:
+
+
+DAYSTAMP ON                        DAYSTAMP OFF
+===========                        ============
+
+cmd: mh                            cmd: mh
+05-Oct-92 21:00:01 W6YEY           21:00:01 W6YEY
+05-Oct-92 21:00:05 W6WNE           21:00:05 W6WNE
+05-Oct-92 21:00:10 W6UOU           21:00:10 W6UOU
+05-Oct-92 21:00:15 K7FT            21:00:15 K7FT
+cmd:                               cmd:
+
+
+
+
+------------------------------------------------------------
+Command   :    MHCLEAR
+Mnemonic  :    MHC
+Default   :    Immediate Command
+
+parameter :    none
+
+Refer to  :    MHEARD
+------------------------------------------------------------
+The MHCLEAR command clears the list of stations heard.   You
+can use this command together with the MHEARD to keep  track
+of any stations heard over a particular period of time, such
+as evening or a week.  Be sure to clear the list of stations
+heard when you first begin to monitor packet activity.
+
+
+------------------------------------------------------------
+Command   :    MINE
+Mnemonic  :    MI
+Default   :    Immediate Command
+
+Parameter :    none
+
+Refer to  :    "Using the Bulletin Board Feature" in the
+               Operating Instruction Manual.
+------------------------------------------------------------
+MINE  command  display the files or message addressed to you
+in a BBS.
+
+
+
+------------------------------------------------------------
+Command   :    MMUI ON/OFF
+Mnemonic  :    MMUI
+Default   :    OFF
+
+Parameter :    ON   UI-Frame (unprotocol packet) from the
+                    stations set by the MTCALL are
+                    monitored.
+
+               OFF  UI-Frame (unprotocol packet) from the
+                    stations set by the MTCALL are not
+                    monitored.
+
+Refer to  :    MTCALL, MTR, MONITOR, MCON
+------------------------------------------------------------
+MTCALL is for monitoring  the  station  that  are  currently
+connecting,  and  it  cannot recognized unprotocol (UNPROTO)
+frame.  When  the  MMUI  is  set  to  ON,  you  can  monitor
+unprotocol frame (UI frame) from stations in the MTCALL.
+
+If  the  station  listed  in the MTCALL has disconnected the
+link  from  you  then  the  station  start   initiating   an
+unprotocol CQ,  you can still monitor the station's activity
+as long as this command is ON.
+
+
+
+
+------------------------------------------------------------
+Command   :    MNET ON/OFF
+Mnemonic  :    MN
+Default   :    OFF
+
+Parameter :    ON   NET/ROM Back Bone packet activity is
+                    monitored.
+
+               OFF  NET/ROM Back Bone packet activity is not
+                    monitored.
+
+Refer to  :    MONITOR, MTCALL, MTR
+------------------------------------------------------------
+MNET is a special monitor command to monitor the activity on
+NET/ROM back bone network.
+
+If MNET is set to ON,  your TNC ignores all packet  activity
+except  the  packet  signal from the NET/ROM.   Only NET/ROM
+activity can be monitored.
+
+NET/ROM's control cord ($0 - $1F) will be converted to  text
+character to avoid malfunction during NET/ROM monitoring.
+
+NET/ROM is a registered trademark of Software 2000, Inc.
+
+
+------------------------------------------------------------
+Command   :    MRPT ON/OFF
+Mnemonic  :    MR
+Default   :    ON
+
+Parameter :    ON   Show digipeaters in the header; stations
+                    heard directly are marked with asterisk.
+
+               OFF  Show packets only from originating and
+                    destination stations.
+
+Refer to  :    HEADERLN
+------------------------------------------------------------
+MRPT affects the way monitored packets are displayed. When
+MRPT is OFF, only packets from the originating station and
+the destination station are displayed:
+
+W6YEY*> W6UOU-7<I;0,3>:
+
+In  addition,  while  MRPT  is OFF,  the TNC will remove all
+indications of digipeater paths in connect requests, and all
+connect and disconnect stamps.
+
+When MRPT is ON,  the call signs  of  all  stations  in  the
+entire  digipeat  path  are displayed.  The call sign of the
+stations received directly are flagged with an asterisk (*):
+
+W6YEY*>W6UOU-7>W6WNE>K7FT <I;0,3>:
+
+
+
+
+------------------------------------------------------------
+Command   :    MRCALL call (-n)
+Mnemonic  :    MRC
+Default   :    Empty
+
+Parameter :    call Call sign  of the stations which you
+                    wish to monitor with MRCALL feature.
+
+               n    0 to 15 indicating an optional
+                    substation ID (SSID).
+
+Refer to  :    MTR, MTCALL, MMUI, MONITOR
+------------------------------------------------------------
+MRCALL is an associated command for MTCALL.   TO enable this
+command  you  must  set  MTCALL.    If  you  set only MRCALL
+command, special monitor function does not work.
+
+Example:
+
+Monitoring with MTR is OFF:
+
+W6YEY > W6UOU-2 :
+
+This examples shows that W6YEY  and  W6UOU-2  are  connected
+state, and W6YEY sent a packet to W6UOU-2.
+
+
+If  you  include  W6UOU-2  in MRCALL and W6YEY is in MTCALL,
+then you can monitor two stations.  In this setting, you can
+monitor only information portion of their activity.
+
+This feature is useful  if  one  of  the  station  is  using
+NET/ROM and you want to monitor both stations.
+
+NOTE: Use a "%" or "&" to clear the MRCALL.
+
+
+
+------------------------------------------------------------
+Command   :    MSTAMP ON/OFF
+Mnemonic  :    MS
+Default   :    OFF
+
+Parameter :    ON   Monitored frames ARE time stamped
+
+               OFF  Monitored frames ARE NOT time stamped.
+
+Refer to  :    HEADERLN, DAYTIME, DAYUSA, CONSTAMP
+------------------------------------------------------------
+The  MSATMP  command  activate  or disables time stamping of
+monitored packets.   When your TNC's internal clock is  set,
+date and time information is available for automatic logging
+of packet activity or other applications.
+
+When  MSTAMP  is  OFF,  the packet header display looks like
+this:
+
+W6YEY-7>W6UOU-7>W6WNE <I,2,2>
+
+When MSATMP is ON and DAYSTAMP is  OFF,  the  display  looks
+like this:
+
+18:50:13 W6YEY-7>W6UOU-7>W6WNE <I,7,1>
+
+When both MSATMP and DAYSTAMP are set ON,  the display looks
+like this:
+
+10-Oct-92 22:10:45 W6YEY-7>W6UOY-7>W6WNE <I,2,2>
+
+Set the date and time with the DAYTIME command.
+
+Setting  MSTAMP  ON  increase  the  length  of  the  address
+display.
+
+Set  HEADERLN  ON  to display this information on a separate
+line.
+
+
+------------------------------------------------------------
+Command   :    MTEXT text
+Mnemonic  :    MT
+Default   :    Standard message
+
+Parameter :    text Any combination of characters and spaces
+                    up to a maximum 239 characters.
+
+Refer to  :    MBOD, PASS
+------------------------------------------------------------
+MTEXT is the message board connect text.   When the MTEXT is
+not set, the standard PBBS connect message is:
+
+Welcome to W6YEY's message board.
+
+To  type multiple line MTEXT messages and include a carriage
+return <CR> character in your text, use PASS character.
+
+
+
+------------------------------------------------------------
+Command   :    MTCALL call (-n)
+Mnemonic  :    MTC
+Default   :    Empty
+
+Parameter :    call Call sign of the stations which you wish
+                    to monitor with MTCALL feature.
+
+               n    0 to 15 indicating an optional
+                    substation ID (SSID).
+
+
+Refer to  :    MTR, MRCALL, MMUI, MONITOR
+------------------------------------------------------------
+MTCALL is a special monitor command.   It specifies the call
+signs for "monitor transmit stations call".
+
+If  you  set originating station's call signs in the MTCALL,
+then you can monitor  their    transmitting  packet's  frame
+number  of  the header.   Thus,  if you set other RBBSs call
+sign in the MTCALL,  you can use and process  the  monitored
+data easily.
+
+
+Example:
+
+If W6YEY is in MTCALL.
+
+W6YEY > W6UOU-2 :
+
+You can monitor the data from W6YEY.
+
+To enable this feature,  you must set MTR to ON.  To disable
+the MTCALL, set MTR to OFF.
+
+If you enter the  call  sign  at  the  first  time,  MTR  is
+automatically set to ON.   If you delete the call sign,  MTR
+will be OFF at the same time.
+
+Example:
+
+cmd: MTC W6WNE, W6UOU-2
+
+This setting enable to monitor both W6WNE and W6UOU.
+
+NOTE: MTCALL  monitors  all  packets  originating  from  the
+station  set  by  MTCALL.    If you wish to monitor only two
+stations  (say  W6WNE  and  W6UOU-2),  you  must  list  both
+stations in the MTCALL and MRCALL.
+
+cmd: MTC W6WNE, W6UOU-2
+cmd: MRC W6WNE, W6UOU-2
+
+NOTE: Use a "%" or "&" character to clear the MTCALL.
+
+
+------------------------------------------------------------
+Command   :    MYCALL call (-n)
+Mnemonic  :    MY
+Default   :    NOCALL
+
+Parameters:    call your call sign
+
+               n    0 to 15, indicating an optional
+                    substation ID (SSID)
+
+Refer to  :    MYALIAS, ID, HID, MYMCALL, CONNECT, XMITOK
+------------------------------------------------------------
+Use  the  MYCALL  command  to  load your call sing into your
+TNC's RAM.   Your call sign is inserted automatically in the
+FROM  address  field for all packets originated by your TNC.
+MYCALL is also used for identification packets (see HID  and
+ID).
+
+Your  TNC accepts connect request frames with your MYCALL in
+the TO field and repeats frames with this call sign  in  the
+digipeated field.
+
+NOTE:  The factory default is set to "NOCALL" and you cannot
+send any data until you set to your own unique ID.
+
+Two  or  more  stations  cannot  use  the  same  call   sign
+(including SSID) on the air at the same time.
+
+Use  SSID  to distinguish between two stations with the same
+call sign.
+
+The SSID will be zero(0) unless explicitly  set  to  another
+value.
+
+Although  there  is  no standardization of SSIDs at present,
+most packet operators use SSID 0 (zero) for manual or  local
+keyboard operation of their main station,  and an SSID of (-
+1) or (-2) for a secondary station or  dedicated  digipeater
+under their responsibility.
+
+Local area networks operated or maintained by a packet group
+or  club  may use the same call sign for several stations in
+their network,  each node or unit being  identified  with  a
+deferent SSID.
+
+
+------------------------------------------------------------
+Command   :    MYALIAS call (-n)
+Mnemonic  :    MYA
+Default   :    Empty
+
+Parameter :    call Alternate identity of your TNC.
+
+               n    0 to 15, an optional substation ID
+                    (SSID).
+
+Refer to  :    MYCALL, ID, HID, DIGIPEAT, MYMCALL
+------------------------------------------------------------
+MYALIAS specifies an alternate call sign (in addition to the
+call sign specified in MYCALL) for use as a digipeater only.
+
+NOTE:  The  TNC  will not allow other stations to connect to
+your MYALIAS call sign.
+
+MYALIAS permits both normal HID identification and an  alias
+alternate, repeater-only "call sign."
+
+Wide-coverage  digipeater  operators  in  some  areas change
+their call  sign  to  a  shorter  and  (usually)  easier  to
+remember identifier.
+
+Identifiers   used   include  International  Civil  Aviation
+Organization (ICAO) airport  IDs,  sometimes  combined  with
+telephone area codes.
+
+
+------------------------------------------------------------
+Command   :    NEWMODE ON/OFF
+Mnemonic  :    NE
+Default   :    OFF
+
+Parameter :    ON   At connect time, the TNC automatically
+                    goes to the mode specified by CONMODE
+                    and return to the Command Mode at
+                    disconnect.
+
+               OFF  At connect time, the TNC automatically
+                    goes to the mode specified by CONMODE as
+                    soon as the link is established. The TNC
+                    does not return to the Command Mode at
+                    disconnect.
+
+Refer to  :    CONMODE, NOMODE, CONNECT
+------------------------------------------------------------
+NEWMODE  determines  how  the  TNc behaves when the link  is
+broken.   The TNC always switches to a mode specified by the
+CONMODE at the time of connection, unless NOMODE is ON.
+
+Set NEWMODE for the type of operation most suitable to your
+needs.
+
+If NEWMODE is OFF and the link is disconnected, the TNc
+remains in converse or transparent mode unless you have
+forced it to return.
+
+When NEWMODE is ON and the link is disconnected, or if the
+connect attempt fails, the TNC returns to the Command Mode.
+
+
+
+------------------------------------------------------------
+Command   :    NOMODE   ON/OFF
+Mnemonic  :    NO
+Default   :    OFF
+
+Parameter :    ON   The TNC does not switch the mode
+                    specified by CONMODE and NEWMODE
+                    automatically.
+
+
+
+               OFF  The TNC switch the mode specified by
+                    CONMODE and NEWMODE automatically.
+
+
+Refer to  :    CONMODE, NEWMODE
+------------------------------------------------------------
+When  NOMODE is ON,  the TNC never switches from Converse or
+Transparent mode to command mode (or vice verse) by  itself.
+Only  specific commands (CONVERSE,  K,  TRANS,  or <CTRL-C>)
+typed by you can change the operating mode.
+
+When NOMODE is OFF,  the TNC  switches  modes  automatically
+according to the way NEWMODE and CONMODE is set.
+
+
+
+------------------------------------------------------------
+Command   :    NUCR ON/OFF
+Mnemonic  :    NU
+Default   :    OFF
+
+Parameter :    ON   <NULL> characters ARE sent to the
+                    terminal following <CR> characters.
+
+               OFF  <NULL> characters are not sent to the
+                    terminal <CR> characters.
+
+Refer to  :    NULF, NULLS
+------------------------------------------------------------
+Some  of  the  older  electromechanical  terminal  (Teletype
+machines) and printer terminals require some extra time  for
+the  printing  head to do a line feed and return to the left
+margin.  NUCR ON solves this problem by making the TNC  send
+<NULL>  characters  (ASCII  code  $00)  to  your computer or
+terminal. This introduces any necessary delay after any <CR>
+sent to the terminal.
+
+The NULLS command  sets  the  number  of  individual  <NULL>
+characters that are to be sent when NUCR is ON.
+
+NOTE:  Set NUCR ON if your terminal or printer misses one or
+more characters after responding to a <CR>.  If this is  the
+case, you will sometimes see overtyped lines.
+
+
+
+
+------------------------------------------------------------
+Command   :    NULF ON/OFF
+Mnemonic  :    NUL
+Default   :    OFF
+
+Parameter :    ON   <NULL> characters are sent to the
+                    terminal following <LF> characters.
+
+               OFF  <NULL> characters are not sent to the
+                    terminal following <LF> characters.
+
+Refer to  :    NUCR, NULLS
+
+
+
+------------------------------------------------------------
+Command   :    NULLS n
+Mnemonic  :    NULL
+Default   :    0
+
+Parameter :    n    0 to 30 specifies the number of <NULL>
+                    characters to be sent to your computer
+                    or terminal after <CR> or <LF> when NUCR
+                    or NULF are set ON
+
+Refer to  :    NUCR, NULF
+------------------------------------------------------------
+NULLS specifies the number of <NULL> characters  (ASCII code
+$00) to be sent to the terminal after <CR> or <LF> is sent.
+
+NUCR  and/or  NULF must be set to indicate whether nulls are
+to be sent after <CR>, <LF>, or both.
+
+Devices requiring null after <CR>  are  typically  hard-copy
+devices requiring time for carriage movement.   Devices that
+require null after  <LF>  are  typically  CRTs  that  scroll
+slowly.
+
+The  null characters are sent from your TNC to your computer
+only in the Converse and Command Modes.
+
+
+
+------------------------------------------------------------
+Command   :    PACLEN n
+Mnemonic  :    PACL
+Default   :    128
+
+Parameter :    n    0 to 255 specifies the maximum length of
+                    the data portion of a packet.
+
+               0    Zero is equivalent to 256
+
+Refer to  :    MAXFRAME
+------------------------------------------------------------
+PACLEN sets the maximum number of  user  data  bytes  to  be
+carried  in  each  packet's information field.   "User data"
+means the characters you actually type at your keyboard  (or
+send form a stored file).
+
+Your TNC automatically transmits a packet when the number of
+characters  you type (or send from disk) for a packet equals
+"n".     This  value  is  used  in  both  the  Converse  and
+Transparent Modes.
+
+Most keyboard-to-keyboard operators use the default value of
+128 bytes for routine VHF/UHF packet service.
+
+Experiment  with  deferent values for MAXFRAME and PACLEN to
+find  the  combination  best  suited   to   your   operating
+conditions, especially if you are transferring files.
+
+The  lower the value of PACLEN,  the greater the possibility
+of  getting  packets  though  the  link  without  "hits"  or
+retries.
+
+Increase  PACLEN  to  256  bytes  if transferring files to a
+nearby station over a high quality path.
+
+Reduce PACLEN to 64,  or even 32 when working "difficult" or
+marginal radio path.
+
+If  the  radio  link  is good,  an optimal relationship will
+exist between the parameters  set  by  these  commands.  Set
+PACLEN  so that the maximum number of characters outstanding
+does  not  exceed  the  receive  buffer  space  of  the  TNC
+receiving data.
+
+NOTE:  It  is not necessary that two TNCs be set to the same
+PACLEN value to exchange data; some TNCs,  however,  may not
+be  compatible  when  frames  contain  more  than  128  data
+characters.
+
+
+------------------------------------------------------------
+Command   :    PACTIME EVERY/AFTER n
+Mnemonic  :    PACT
+Default   :    AFTER 10
+
+Parameter :    n         0 to 250 specifies 100 millisecond
+                         intervals.
+
+               EVERY     Packet time-out occurs every "n"
+                         times 100 mS.
+
+               AFTER     Packet time-out occurs when "n"
+                         times 100 mS. elapse without
+                         input from the computer or
+                         terminal.
+
+Refer to  :    CPACTIME, TRANS
+------------------------------------------------------------
+A PACTIME parameter is always used in the Transparent  Mode.
+PACTIME is also set in the Converse Mode if CPACTIME is on.
+
+When  EVERY  is  specified,  the characters you type or send
+from disk are packetized and queued for  transmission  every
+"n" times 100 mS.
+
+When  AFTER  is  specified,  the characters you type or send
+from disk are packetized when input from the terminal  stops
+for "n" times 100 mS.
+
+A  zero-length  packet will never be produced.  The timer is
+not started until the first character or byte is entered.
+
+A value of 0(zero) for "n" is allowed;  zero  means  packets
+are sent with no wait time.
+
+
+
+------------------------------------------------------------
+Command   :    PARITY n
+Mnemonic  :    PAR
+Default   :    3
+
+Parameter :    n    0 to 3 selects a parity option from the
+                    table below.
+
+Refer to  :    AWLEN, 8BITCONV, RESTART
+------------------------------------------------------------
+PARITY  sets  the TNC's data parity for terminal or computer
+data transfer according to the following table:
+
+0 = no parity
+1 = odd parity
+2 = no parity
+3 = even parity
+
+The parity bit,  if present,  is stripped  automatically  on
+input, and is not checked in the Command and Converse Modes.
+
+In  the  Transparent  Mode all eight bits (including parity)
+are transmitted in packets.  When "no  parity"  is  set  and
+AWLEN is 7, the eighth bit is set to 0 (zero).
+
+
+
+____________________________________________________________
+Command   :    PASS n
+Mnemonic  :    PAS
+Default   :    $16 <CTRL-V>
+
+Parameter :    n    0 to $7F(0 to 127 decimal) specifies an
+                    ASCII character code.
+
+Refer to  :    BTEXT, CTEXT, DTEXT, MTEXT
+------------------------------------------------------------
+PASS  selects  the ASCII character used for the "pass" input
+editing command.
+
+The  Parameter  "n"  is  the  numeric  ASCII  code  for  the
+character   you  will  use  to  signal  that  the  character
+immediately following it is to be included in  a  packet  or
+text string.
+
+NOTE: You can enter the code in either hex or decimal.
+
+Use  the  PASS  character  (default  is  <CTRL-V>)  to  send
+characters that usually have special functions.
+
+A common use for the pass character is to allow <CR>  to  be
+included  in the BTEXT,  CTEXT,  DTEXT and MTEXT messages so
+that the transmitted information appears  on  several  short
+lines rather than a single longer line.
+
+Use  the PASS character to insert <CR> at the end of a short
+line:
+
+Example:
+
+BT Notice: <CTRL-V><CTRL-M>
+Meeting at the Firehouse tonight <CTRL-V><CTRL-M>
+at 8:00 PM. All welcome ! <CR>
+
+The other station's monitor shows:
+
+Notice:
+Meeting at the Firehouse tonight
+at 8:00 PM. All welcome !
+
+Without the PASS character, the ,message would probably look
+this:
+
+Notice: Meeting at the Firehouse tonight  at  8:00  PM.  All
+welcome !
+
+In like manner, you can include <CR> in text when you are in
+the  Converse  Mode to send multiline packets.  (The default
+send-packet character is <CR>.)
+
+------------------------------------------------------------
+Command   :    PASSALL  ON/OFF
+Mnemonic  :    PASSA
+Default   :    OFF
+
+Parameter :    ON   Your TNC will accept packets with
+               invalid CRCs (Cyclic Redundancy Check).
+
+               OFF  Your TNC will only accept packets with
+                    valid CRCs.
+
+Refer to  :    MHEARD, RETRY
+------------------------------------------------------------
+PASSALL permits the TNC to  display  packets  received  with
+invalid CRC fields;  the error-detecting mechanism is turned
+off.
+
+Packets are accepted for display despite CRC errors if  they
+consists of an even multiple of eight bits and are up to 330
+bytes.  The  TNC  attempts  to  decode the address field and
+displays the call sign(s) in the  standard  monitor  format,
+followed by the text of the packet.
+
+PASSALL  is  normally  turned off,  therefore,  the protocol
+ensures that received packet data is error-free by rejecting
+packets with invalid CRC fields.
+
+PASS (sometimes called "Garbage Mode")  may  be  useful  for
+testing  a  marginal RF link or during operation under other
+unusual conditions or circumstances.
+
+When you set PASSALL ON, while monitoring a moderately noisy
+channel "packets" are displayed periodically  because  there
+is  no  basis  for distinguishing between actual packets and
+random noise.
+
+NOTE: When PASALL is  ON,  logging  of  station  heard  (for
+display  by MHEARD) is disabled;  the call sign detected may
+be incorrect.
+
+
+
+------------------------------------------------------------
+COMMAND   :    PERSIST n
+Mnemonic  :    PE
+Default   :    127
+
+
+Parameter :    n    0 to 255 specifies the threshold value
+                    for random number attempt to transmit.
+
+               0    Signifies a 1/256th chance of
+                    transmitting every SLOTTIME.
+
+               255  Causes the TNC to transmit right away
+                    without delay.
+
+Refer to  :    PPERSIST, SLOTTIME
+------------------------------------------------------------
+The PERSIST command  works  with  the  SLOTTIME  command  to
+achieve   true  p-persistent  CSMA  (Carrier-Sense  Multiple
+Access)in the KISS TNC mode and in AX.25 operation.
+
+However,  no  real  advantage  will  be  obtained  in  AX.25
+operation  unless the order stations on the channel are also
+using PERSIST and SLOTTIME.
+
+When  the  host  (your  computer)  has   queued   data   for
+transmission,  the  TNC  monitors  DCD (Data Carrier Detect)
+signal from its internal modem.  The TNC waits  indefinitely
+for DCD to go inactive.
+
+When the Channel is clear, the TNC generates a random number
+between  0 and 255.  If this number is less than or equal to
+"P" the TNC keys the radio's PTT line,  wait 0.01 x  TXDELAY
+seconds, and then transmits all frames in the queue. The TNC
+then unkeys the PTT line ad returns to the idle state.
+
+If the random number is greater than "P",  the TNC wait 0.01
+x SLOTTIME seconds and repeats the procedure.   If  the  DCD
+signal has gone active during this wait time,  the TNC waits
+for DCD to clear before it continues.
+
+The TNC waits an exponentially-distributed  random  interval
+after it senses that the channel is clear before it tries to
+transmit.  When  PERSIST  and  SLOTTIME  are  carefully set,
+several stations sending traffic are  much  less  likely  to
+collide with each other when they simultaneously detect that
+the channel is clear.
+
+NOTE: P=255 directs the TNC to transmit as soon as possible,
+regardless of the random number.
+
+
+
+
+------------------------------------------------------------
+Command   :    PPERSIST ON/ OFF
+Mnemonic  :    PP
+Default   :    OFF
+
+Parameter :    ON   The TNC uses PERSIST and SLOTTIME
+                    parameters when it executes p-persistent
+                    CSMA (Carrier Sense Multiple Access).
+
+               OFF  The TNC uses DWAIT for TAPR-type 1
+                    persistent CSMA.
+
+Refer to  :    PERSIST, SLOTTIME
+-----------------------------------------------------------
+When  PPERSIST  is  set to ON,  the TNC uses the PERSIST and
+SLOTTIME parameters for p-persistent CSMA instead of  normal
+TAPR-type   DWAIT   procedure  to  achieve  CSMA  operation.
+PPERSIST may be used in  both  KISS  TNC  and  normal  AX.25
+operation.
+
+Set  PPERSIST  to  ON  if you operate the frequency has many
+PBBSs activity.
+
+
+
+
+------------------------------------------------------------
+Command   :    READ
+Mnemonic  :    R
+Default   :    Immediate Command
+
+Parameter :    none
+
+Refer to  :    "Using the Bulletin Board Feature" in the
+Operating Instruction Manual.
+------------------------------------------------------------
+READ command reads BBS files.
+
+
+
+
+------------------------------------------------------------
+Command   :    RAMTEST
+Mnemonic  :    RAMTEST
+Default   :    Immediate Command
+
+Parameter :    none
+
+Refer to  :    ABAUD, RESET, RESTART
+------------------------------------------------------------
+RAMTEST is an immediate command to  proceed  RAM  check  and
+initialize  the  TNC  to the factory default.  RAMTEST takes
+approximately 10 seconds.
+
+
+
+
+------------------------------------------------------------
+Command   :    RETRY n
+Mnemonic  :    RE
+Default   :    10
+
+Parameter :    n    0 to 15 specifies the maximum number of
+                    packet retries.
+
+Refer to  :    FRACK, CONPERM, TRIES
+------------------------------------------------------------
+The AX.25 protocol uses retries -  re-transmission of frames
+that have not been acknowledged.   Frames are re-transmitted
+"n" times before the link is disconnected.
+
+The  time between retries specified by the command FRACK.  A
+value of 0 for "n" specifies an infinite number of retries.
+
+
+
+
+------------------------------------------------------------
+Command   :    RECONNECT  call1[VIA call2[,call3...call9]]
+Mnemonic  :    REC
+Default   :    Immediate command
+
+Parameter :    call1     This is the call sign of the
+                         station you are trying to reconnect
+                         to.
+
+               call2     Optional call sign(s) or station(s)
+                         you are attempting to digipeat
+                         through.  You can use up to eight
+                         digipeat stations.
+
+Refer to  :    CONNECT, DISCONNE
+------------------------------------------------------------
+The RECONNECT command allows you to change the path you  are
+using  to  communicate  with  another  station.  NOTE:  This
+command works only when you are  already  connected  to  the
+station you are attempting to reconnect to.
+
+When you use this command, any frames that may be in process
+between your station and the station you are reconnecting to
+may be lost.
+
+
+
+------------------------------------------------------------
+Command   :    REDISPLA   n
+Mnemonic  :    RED
+Default   :    $12 <CTRL-R>
+
+Parameter :    n    0  to $7F (0 to 127 decimal)
+                    specifies an ASCII character code.
+
+Refer to  :    FLOW
+------------------------------------------------------------
+REDISPLA  changes the redisplay-line input editing character
+code.
+
+Parameter "n" is the numeric ASCII code  for  the  character
+you  will  use when you want to re-display the current input
+line.
+
+NOTE: You can enter the code in either hex or decimal.
+
+Type the REDISPLA character to re-display a  line  you  have
+just typed.  The following things will happen:
+
+1) Type-in flow control is temporarily turned off (if it had
+been  active).  Any  incoming  packets  that are pending are
+displayed.
+
+2) A <BACKSLASH> is appended to the line you just typed  and
+the line is shown below it.  Only the final form of the line
+is shown if you have deleted or changed any characters.
+
+3) You can now continue typing where you left off.
+
+Use the redisplay-line character to see a  "clean"  copy  of
+your input if you are using a printing terminal and you have
+deleted characters.
+
+If  BKONDEL  is  set  OFF,  deletions  are  designated  with
+<BACKSLASH> characters, rather than by trying to correct the
+input line display.   The re-display line is  the  corrected
+text.
+
+Use the REDISPLA character if a packet is received while you
+are typing a message in the Converse Mode.   You can see the
+incoming  message  before  you  send  your  packet   without
+canceling your input.
+
+
+
+------------------------------------------------------------
+Command   :    RELINK ON/OFF
+Mnemonic  :    REL
+Default   :    OFF
+
+Parameter :    ON   In AX.25 versions 1 and 2, the TNC will
+                    automatically try to reconnect the other
+                    station after the link has timed out on
+                    retries.
+
+               OFF  The TNc will not attempt to re-establish
+                    the failed link.
+
+Refer to  :    RETRY, TRIES, CONPERM
+------------------------------------------------------------
+When RELINK is set to ON,  the TNC attempts  to reconnect by
+sending SABM frame (connect requests) after retrying out.
+
+When RELINK is set to OFF,  the TNC forces a  disconnect  by
+sending  a  DISC  frame  (DISCONNECT COMMAND) after retrying
+out.
+
+Set RELINK to OFF when using  the  TNC  with  host  computer
+applications,  computer-based message systems and electronic
+mail programs.
+
+
+
+
+------------------------------------------------------------
+Command   :    RESPTIME  n
+Mnemonic  :    RES
+Default   :    5
+
+Parameter :    n    0 to 250 specifies 100 millisecond
+                    intervals.
+
+Refer to  :    DWAIT
+------------------------------------------------------------
+RESPTIME  adds  a  minimum  delay  before  the   TNC   sends
+acknowledgment packets. This delay may run concurrently with
+the  default  wait  time set by DWAIT and any random wait in
+effect.
+
+Use RESPTIME delay to increase throughput during  operations
+such as file transfer when the sending TNC usually sends the
+maximum number of full-length packets.
+
+Occasionally,  the  sending TNC many not have a packet ready
+in  time  to  prevent  transmission   from   being   stopped
+temporarily,  with  the  result  that the acknowledgement of
+earlier packets  collides  with  the  final  packet  of  the
+series.
+
+These  collisions  can  be avoided if the receiving TNC sets
+RESPTIME to 10.
+
+
+
+
+------------------------------------------------------------
+Command   :    RESET
+Mnemonic  :    RESET
+Default   :    Immediate command
+
+Parameter :    none
+
+Refer to  :    RESTART, RAMTEST
+------------------------------------------------------------
+RESET is an immediate command that resets all parameters  to
+the TNC's PROM default settings and reinitializes the TNC.
+
+WARNING:   All personalized parameters are monitor lists are
+lost.
+
+To reinitialize the TNC using the parameter values in bbRAM,
+turn the TNC off then on, or use the RESTART command.
+
+
+------------------------------------------------------------
+Command   :    RESTART
+Mnemonic  :    RESTART
+Default   :    Immediate Command
+
+Parameter :    none
+
+Refer to  :    RESET, RAMTEST
+------------------------------------------------------------
+RESTART is an immediate command that reinitializes  the  TNC
+using   the   defaults   stored  in  the  TNC  bbRAM.   Your
+personalized  parameter  settings  are  retained  unchanged,
+except data stored in MHARD and LOG.
+
+The effect of the RESTART command is the same as turning the
+TNC OFF, then ON again.
+
+RESTART  does  not reset the parameter values in bbRAM.  See
+the RESET command.
+
+
+
+
+------------------------------------------------------------
+Command   :    ROUTE ON/OFF
+Mnemonic  :    ROU
+Default   :    ON
+
+Parameter :    ON   Includes routing information in received
+                    FWD mail.
+
+               OFF  Excludes routing information in received
+                    FWD mail.
+
+Refer to  :    none
+------------------------------------------------------------
+ROUTE command enables or disables whether the display  shows
+the routing information in FWD mail.
+
+If ROUTE is set to OFF,  routing information in the FWD mail
+received is excluded on the display.
+
+If you wish to know the FWD mail  routing  information,  set
+ROUTE to ON to show the all routes.
+
+
+
+
+------------------------------------------------------------
+Command   :    RSFLOW ON/OFF
+Mnemonic  :    RS
+Default   :    ON
+
+Parameter :    ON   Enables hardware flow control.
+
+               OFF  Disable the hardware flow control when
+                    the XFLOW is set to ON.
+
+Refer to  :    XFLOW, FLOVER
+------------------------------------------------------------
+RSFLOW is select the method of flow control between your TNC
+and terminal.
+
+When RSFLOW is set to ON, the flow control is performed same
+as the TAPR TNC-2. (If XFLOW is set to ON, both software and
+hardware flow control is performed.)
+
+When  RSFLOW  is  set  to  OFF,  software  flow  control  is
+performed only when the XFLOW is set to ON.  If XFLOW is set
+to  OFF,   only  hardware  flow  control  (DTR  or  RTS)  is
+performed.
+
+
+
+
+------------------------------------------------------------
+Command   :    RXBLOCK ON/OFF
+Mnemonic  :    RX
+Default   :    OFF
+
+Parameter :    ON   Direct the TNC to pace a $FF mark in
+                    front of received packets before they
+                    are printed on your terminal.
+
+               OFF  Does not place a $FF mark in front of
+                    received packets.
+
+Refer to  :    none
+------------------------------------------------------------
+The $FF mark makes easier to identify incoming packets.
+
+When RXBLOCK is ON, your TNC automatically places a $FF mark
+in front of all incoming packets.  The order of identity is:
+
+ -----------------------------------------------------
+|  $FF   |   LH    |   LL   |   PID   |  DATA UNIT    |
+ -----------------------------------------------------
+(PREFIX )  (LENGTH)        (PID)           (DATA)
+
+where :
+
+$FF is the header identify block (1 byte).
+
+LH is the block length high byte (1 byte,  high 4  bit,  111
+fixed).
+
+LL is the block length low byte (1 byte).
+
+PID  is  the  protocol  indent  of  the control field of the
+received packet.
+
+DATA UNIT is the contents of the received packet.
+
+NOTE: When  use  this  command,  check  AUTOLF  and  MFILTER
+settings.
+
+
+
+------------------------------------------------------------
+Command   :    SCREENLN n
+Mnemonic  :    S
+Default   :    0
+
+Parameter :    n    0 to 255 specifies the screen or platen
+                    width,in characters, of the terminal.
+
+Refer to  :    none
+------------------------------------------------------------
+The  SCREENLN  command  allows  you  to properly format your
+terminal's output.   A <CR>,  <LF> sequence is sent  to  the
+terminal  at  the  end of a line in the Command and Converse
+modes after "n" characters have been printed.  An "n"  value
+of zero inhibits this function.
+
+NOTE:  If  your computer automatically formats output lines,
+set SCREENLN 0 to avoid a  conflict  between  the  two  line
+formats.
+
+
+------------------------------------------------------------
+Command   :    SENDPAC n
+Mnemonic  :    SE
+Default   :    $0D<CTRL-M>
+
+Parameter :    n    0 to $7F ( 0 to 127 decimal) specifies
+                    an ASCII character code.
+
+Refer to  :    PACLEN, CR, CPACTIME
+------------------------------------------------------------
+Use  the  SENDPAC  command  to  select the character used to
+force a  packet  to  be  sent  in  the  Converse  Mode.  The
+parameter  "n"  is  the numeric ASCII code for the character
+you want to use to force your input  to  be  packetized  and
+queued  for  transmission.  You can enter the code in either
+hexadecimal or decimal numbers.
+
+Use default SENDPAC value $0D for ordinary conversation with
+CR ON to send packets  at  natural  intervals  with  <<CR>s>
+included in the packet.
+
+When you are setting CPACTIME ON,  set SENDPAC to some value
+not ordinarily used  (say,  <CTRL-A>,  with  CR  OFF).  This
+setting  forces  packets  to  be  sent  without  extra  <CR>
+characters being sent in the text.
+
+
+------------------------------------------------------------
+Command   :    SLOTTIME n
+Mnemonic  :    SL
+Default   :    10
+
+Parameter :    n    0 to 250 specifies the time interval
+                    during which the TNC waits between
+                    generating random numbers to see if it
+                    can transmit.
+
+Refer to  :    PERSIST, PPERSIST
+------------------------------------------------------------
+The SLOTTIME command works with  the  PPERSIST  and  PERSIST
+command  to  achieve  true  p-persistent CSMA (Carrier Sense
+Multiple  Access)  in  KISS  TNC  mode  and   normal   AX.25
+operation.  No real advantage,  however,  is obtained during
+AX.25 operation unless other  stations on  the  channel  are
+also using PERSIST and SLOTTIME.
+
+
+
+------------------------------------------------------------
+Command   :    SOFTDCD ON/OFF
+Mnemonic  :    SOFTDCD
+Default   :    OFF
+
+Parameter :    ON   Carrier Detect is performed by software.
+
+               OFF  Hardware Carrier Detect.
+
+Refer to  :    none
+------------------------------------------------------------
+If  some  reasons,  if  you  cannot set your radio's squelch
+control to mute  the  back  ground  noise,  the  TNC  cannot
+respond to the other station.
+
+However, if SOFTDCD is set to ON, carrier detect decision is
+performed  by software and your TNC can respond to the other
+station.
+
+Some hand-held transceivers incorporate with a "Power  Save"
+feature,  if  the  radio cannot turn OFF the circuit the TNC
+tends to retries cause by the power save reception.
+
+If this is a case,  open the squelch and set SOFTDCD  to  ON
+minimizes the retries caused by the power save.
+
+
+
+------------------------------------------------------------
+Command   :    SQUELCH ON/OFF
+Mnemonic  :    SQ
+Default   :    OFF
+
+Parameter :    ON   The TNC responds to positive-going
+                    squelch voltage.
+
+               OFF  The TNc responds to negative-going
+                    squelch voltage.
+
+Refer to  :    none
+------------------------------------------------------------
+Although  you  can  set  SQUELCH to ON,  but this TNC is not
+capable of using an external squelch control.   The majority
+of amateur radio applications does not need this feature.
+
+WARNING:Set SQUELCH ON to inhibit the transmission.
+
+
+
+
+------------------------------------------------------------
+Command   :    START n
+Mnemonic  :    STA
+Default   :    $11 <CTRL-Q>
+
+Parameter :    n    0 to $7F (0 to 127 decimal) specifies an
+                    ASCII characters code.
+
+Refer to  :    STOP, XFLOW, TRFLOW, XOFF, XON, RSFLOW
+------------------------------------------------------------
+Use the START command to choose the User Start character you
+want  to  use to restart output from the TNC to the terminal
+after you have halted it by typing the User Stop character.
+
+NOTES:
+
+1) The User Stop character is set by the STOP command.
+
+2) You can enter the value in either hex or decimal
+
+If the User Start and User Stop characters are set  to  $00,
+software  flow control to the TNC is disabled;  the TNC will
+only respond to hardware flow control (CTS/RTS).
+
+If the same character is used for both the  User  Start  and
+User  Stop characters,  the TNC alternately starts and stops
+transmission on receipt of the character ("toggles").
+
+
+
+------------------------------------------------------------
+Command   :    STOP n
+Mnemonic  :    STO
+Default   :    $13 <CTRL-S>
+
+Parameter :    n    0 to $7F (0 to 127 decimal) specifies an
+                    ASCII character code.
+
+Refer to  :    START, XFLOW, TRFLOW, XOFF, XON, RSFLOW
+------------------------------------------------------------
+Use the STOP command to select the User Stop  character  you
+want  to  use  to  stop output from the TNC to the terminal.
+Type this character to halt the TNC's output to your monitor
+so that you can read the received text before it scrolls off
+your screen display.
+
+NOTES:
+
+1) Output is restarted with the User Start character.
+
+2) The User Start character is set by the START command.
+
+3) You can enter the value in either hex or decimal.
+
+
+
+------------------------------------------------------------
+Command   :    STREAMSW n
+Mnemonic  :    STR
+Default   :    $01 <CTRL-A>
+
+Parameter :    n    0 to $7F (0 to 255) specifies an ASCII
+                    character code.
+
+Refer to  :    CSTATUS, USERS, STREAMCA, STREAMDB, LCSTREAM
+------------------------------------------------------------
+STREAMSW selects the characters used by both the TNC and the
+user  to  show  that  a  new  connection  channel  is  being
+addressed.
+
+The  character  can  be  PASSed  in the Converse Mode.  This
+character is always  ignored  as  a  user-initiated  channel
+switch  in  the  Transparent Mode;  it just flows through as
+data.
+
+NOTES:
+
+1) You cannot change the outgoing channel while the  TNC  is
+active or "on-line" in the Transparent Mode.
+
+2)  To  switch channels,  ESCAPE to the Command Mode.   Then
+enter the Converse Mode to use the STREAMSW command.
+
+Refer to STREAMCA for further use of STREAMSW.
+
+
+
+------------------------------------------------------------
+Command   :    STREAMCA ON/OFF
+Mnemonic  :    STREMC
+Default   :    OFF
+
+Parameter :    ON   Call sign of the other station is
+                    displayed in multiple connection
+                    operation.
+
+               OFF  Call sign of the other station is not
+                    displayed.
+
+Refer to  :    CSTATUS, USERS, STREAMSW, STREAMDB
+------------------------------------------------------------
+STREAMCA  displays  the  call  sign  on  the  "connected-to"
+station after the channel identifier.
+
+Set   STREAMCA   ON   if  you  intend  to  operate  multiple
+connections (as  opposed  to  having  your  "host"  computer
+operated multiple connections).
+
+STREAMCA  is  especially  useful when you are operating with
+multiple connections.   Using STREAMCA is similar  to  using
+MRPT  to  show  digipeater paths when you are monitoring the
+channel.
+
+EXAMPLES:
+
+1) When STREAMCA is OFF,  the monitored activity looks  like
+this:
+
+:A hi bob
+hi ted how goes it?
+:B *** CONNECTED to W6YEY
+:B must be a dx record.
+:A unreal ted
+:B big band opening
+
+2)  When  STREAMCA  is ON,  the same activity looks like the
+following.
+
+:A: W6UOU: hi bob
+hi ted how goes it?
+:B: W6YEY:*** CONNECTED to W6YEY
+:B: must be a dx record.
+:A: unreal ted
+:B: W6YEY:big band opening
+
+With STREAMCA ON, ":A" becomes ":A:<call sign>:"
+
+
+------------------------------------------------------------
+Command   :    STREAMDB ON/OFF
+Mnemonic  :    STREAMD
+Default   :    OFF
+
+Parameter :    ON   Received STREAMSW characters appear
+                    twice (doubled).
+
+               OFF  Received STREAMSW characters appear
+                    once (not doubled).
+
+Refer to  :    CSTATUS, USERS, STREAMSW, STREAMCA, LCSTREAM
+------------------------------------------------------------
+STREAMDB displays received  STREAMSW  characters  as  double
+characters.
+
+In the following example, STREAMDB is ON and STREAMSW is set
+to "|":
+
+|| this is a test.
+
+The sending station actually transmitted:
+
+| this is a test.
+
+The same frame received with STREAMDB OFF would be displayed
+as:
+
+| this is a test.
+
+NOTE:  Set  STREAMDB  ON  when  you  operate  with  multiple
+connections so you can tell the deference  between  STREAMSW
+characters  received  from  the  other stations and STREAMSW
+characters generated by your TNC.
+
+NOTE: STREAMSW characters must not be  one  of  the  channel
+numbers (A through K) for this command to function properly.
+
+
+
+------------------------------------------------------------
+Command   :    TRANS
+Mnemonic  :    T
+Default   :    Immediate Command
+
+Parameter :    none
+
+Refer to  :    COMMAND, CMDTIME, CONVERSE
+------------------------------------------------------------
+TRANS is an immediate command that switches the TNC from the
+Command  Mode to the Transparent Mode.  The current state of
+the radio link is  not affected.
+
+Transparent    mode  is  primarily   useful   for   computer
+communications.  In the Transparent Mode,  "human interface"
+features such as input editing, echoing of input characters,
+and type-in flow control are disabled.
+
+Use the Transparent Mode when you need to transfer binary or
+other non-text files.
+
+
+------------------------------------------------------------
+Command   :    TCLEAR
+Mnemonic  :    TC
+Default   :    Immediate command
+
+Parameter :    none
+
+Refer to  :    CANLINE
+------------------------------------------------------------
+The TCLEAR command clears  the  TNC's  transmit  buffer  and
+cancels  further  transmission  of  data  except  for  a few
+remaining packets.
+
+NOTE: You must be in the command mode to use TCLEAR
+
+NOTE: Use the <CTRL-C> (default) command to  return  to  the
+Command  Mode.
+
+
+------------------------------------------------------------
+Command   :    TIME n
+Mnemonic  :    TI
+Default   :    $14 <CTRL-T>
+
+Parameter :    n    0 to $7F (0 to 127 decimal) specifies an
+                    ASCII character code.
+
+Refer to  :    DAYSTAMP, DAYTIME
+------------------------------------------------------------
+The  TIME  command  specifies an ASCII character in the text
+you type into the transmit buffer or into a text file stored
+on disk.
+
+This feature can be used in BTEXT,  CTEXT,  DTEXT,  MTEXT if
+you  want  to send a current time information from the TNC's
+clock.
+
+Type <CTRL-T> to embed the TIME command in your text file.
+
+At transmit time,  the TNC reads the embedded  control  code
+(default  <CTRL-T>),  reads  the  time of day from the TNC's
+internal clock and then sends the time to the other station.
+
+When DAYSTAMP is set ON,  the date is transmitted  with  the
+time.
+
+
+------------------------------------------------------------
+Command   :    TOUT n
+Mnemonic  :    TOUT
+Default   :    30
+
+Parameter :    n    0 to 250 specified the time-out value
+                    for the message board in 10 second
+                    intervals.
+
+Refer to  :    RELINK, CHECK
+------------------------------------------------------------
+TOUT specifies the time out value for the message board.  If
+your  TNC  cannot  hear  the connected station's signal more
+than the TOUT period in BBS operation,  your TNC  forces  to
+disconnect the link.
+
+WARNING: If the RELINK is set to ON,  the disconnect process
+cannot be performed.
+
+
+
+------------------------------------------------------------
+Command   :    TRACE ON/OFF
+Mnemonic  :    TRAC
+Default   :    OFF
+
+Parameter :    ON   Trace function is activated.
+
+               OFF  Trace function is disabled.
+
+Refer to  :    none
+------------------------------------------------------------
+The TRACE command activates the AX.25 protocol  display.  If
+TRACE  is  ON,  all  received  frames are displayed in their
+entirety, including all header information.
+
+NOTE: Be careful when you use mnemonic - do not use "TRA"!
+TRA cause the Controller to change to the Transparent Mode.
+
+The TRACE display is shown as it  appears  on  an  80-column
+display.  The following monitored frame is a sample:
+
+W2XYZ* > TESTER <UI>:
+
+Byte              Hex                    Shifted ASCII
+====              ===                    =============
+000: AA88AA6A8 8AA460AE 6494AA0 406103F0 TESTERoW2XYZ
+
+ASCII
+=====
+o.x  .....`d...@a..
+
+The  byte  column  shows  the  offset into the packet of the
+beginning byte of the line.
+
+The hex display column  shows  the  next  16  bytes  of  the
+packet,  exactly as received,  in standard hex format.   The
+shifted ASCII column decodes the high-order  seven  bits  of
+each bytes as an ASCII character code.
+
+The  ASCII  column  decodes the low-order seven bits of each
+bytes as an ASCII character code.
+
+In standard AX.25 packet:
+
+1) The call sign address field is displayed correctly in the
+ASCII column.
+
+2) A text  message  is  displayed  correctly  in  the  ASCII
+column.
+
+3)   Non-Printing  characters  and  control  characters  are
+displayed in both ASCII fields as period (".").
+
+You can examine the hex display field to see the contents of
+the SSID byte and the control bytes used by the protocol.
+
+
+
+
+------------------------------------------------------------
+Command   :    TRFLOW ON/FF
+Mnemonic  :    TRF
+Default   :    OFF
+
+Parameter :    ON   Software flow control for the computer
+                    or terminal can be activated in
+                    the Transparent Mode.
+
+               OFF  Software flow control for the computer
+                    or terminal is disabled in the
+                    Transparent Mode.
+
+Refer to  :    START, STOP, XFLOW, TXFLOW
+------------------------------------------------------------
+If TRFLOW is ON,  the type  of  flow  control  used  in  the
+Transparent  Mode  is  determined  by how START and STOP are
+set.
+
+If TRFLOW is OFF, only "hardware" flow control (CTS, RTS) is
+available to the computer and all characters received by the
+TNC are transmitted as data.
+
+If START and STOP are set to $00,  the user  Stop  and  User
+Start  characters  are disabled - hardware flow control must
+be used by the computer.
+
+If TRFLOW is ON,  and START and STOP are set to values other
+than  zero,  software flow control is enabled for the user's
+computer or terminal.   The TNc responds to the  User  Start
+and  User  Stop  characters  (set  by  START and STOP) while
+remaining transparent  to  all  other  characters  from  the
+terminal.
+
+Unless  TXFLOW  is  also  ON<  only hardware flow control is
+available to the TNc to control output from the terminal.
+
+
+
+
+------------------------------------------------------------
+Command   :    TRIES n
+Mnemonic  :    TRI
+Default   :    0
+
+Parameter :    n    0 to 15 specifies the current RETRY
+                    level on the selected input channel.
+
+Refer to  :    RETRY
+------------------------------------------------------------
+TRIES retrieves (or forces) the count of "tries" on the data
+channel presently selected.
+
+If you type tries without an argument,  the TNC returns  the
+current  number  of  tries  if an outstanding unacknowledged
+frame exists. If no outstanding unacknowledged frame exists,
+the TNC returns the number of tries required to get  an  ACK
+for the previous frame.
+
+If RETRY is set to zero(0), the TRIES command always returns
+zero.
+
+Use  TRIES  for  gathering  statistics  on  a  given path or
+channel.  TRIES is especially useful  for  computer-operated
+stations  (such  as  automatic  message-forwarding stations)
+using less-than-optimal, noise  HF or satellite channels or
+paths.
+
+Using TRIES under these conditions automatically   optimized
+the PACLEN and MAXFRAME parameters.
+
+If  you type TRIES with an argument,  the 'tries' counter is
+forced to the entered value.  Using this command to force  a
+new count of tries is not recommended.
+
+
+
+------------------------------------------------------------
+Command   :    TXDELAY n
+Mnemonic  :    TX
+Default   :    50 (500ms)
+
+Parameter :    n    0 to 120 specifies 10 mS intervals.
+
+Refer to  :    AXDELAY, AXHANG
+------------------------------------------------------------
+The  TXDELAY  command  tells the TNC how long to wait before
+sending packet frame data after  keying  your  transmitter's
+PTT line.
+
+All  transmitters need some amount of start-up time to put a
+signal on the air; some need more, some need less.
+
+Some general rules apply to these:
+
+1) Crystal-controlled radios with the diode T/R switches are
+faster
+
+2) Synthesizer radios need time for phase-lock-loop to lock.
+
+3) Radios with mechanical transmit  /receive    relays  need
+more time.
+
+4)  External  amplifiers  that use RF-driven relay switching
+usually require you to increase TXDELAY  to  allow  for  the
+additional delays.
+
+Experiment  to  determine  the  best  TXDELAY  value  for  a
+specific radio.
+
+TXDELAY can also compensate for certain  characteristics  of
+the  radio  used  by the station which you are communicating
+with.
+
+If the distant station's radio  has  slow  AGC  recovery  or
+squelch  release times when it is switching from transmit to
+receive,  increasing your TXDELAY  may  reduce  retries  and
+improve throughput by retarding the start of your data until
+the other receiver has reached full sensitivity.
+
+
+
+
+------------------------------------------------------------
+Command   :    TXFLOW ON/OFF
+Mnemonic  :    TXF
+Default   :    OFF
+
+Parameter :    ON   Software flow  control for the TNC can
+                    be activated in the Transparent Mode.
+
+               OFF  Software control for the TNC is disabled
+                    in the Transparent Mode.
+
+Refer to  :    XON, XOFF, XFLOW, TRFLOW
+------------------------------------------------------------
+When TXFLOW is ON,  the setting of XFLOW determines the type
+of flow control used in Transparent mode.
+
+When TXFLOW is OFF, the TNC uses only hardware flow control;
+all data sent to the terminal remains fully transparent.
+
+When TXFLOW and XFLOW are ON,  the TNC uses  the  Start  and
+Stop  characters ( set by XON and XOFF) to control the input
+from the terminal.
+
+Unless TRFLOW is also ON,  only  hardware  flow  control  is
+available to the computer or terminal to control output from
+the TNC.
+
+
+
+
+------------------------------------------------------------
+Command   :    TXUIFRAM ON/OFF
+Mnemonic  :    TXU
+Default   :    ON
+
+Parameter :    ON   Unprotocol packet transmission is
+                    activated.
+
+               OFF  Unprotocol packet transmission is
+                    disabled except beacon and digipeat.
+
+Refer to  :    NEWMODE, NOMODE
+------------------------------------------------------------
+If  TXUIFRAM  is  set  to  OFF  cause the TNC to disable the
+capability of sending unprotocol packet (CQ),  except beacon
+and digipeat.    All packet data is transmitted to the other
+station during the connect state.
+
+All packet data from the terminal  during  the  disconnected
+state  is  discarded  to  prevent from the spill over to the
+other unconnected stations.
+
+Set this command to OFF helps BBS operation.  (Set  TXUIFRAM
+OFF and NEWMODE OFF)
+
+If  you  wish to send CQ,  or wish to communicate with other
+station with unprotocol mode, set TXUIFRAM to ON.
+
+
+
+------------------------------------------------------------
+Command   :    UNPROTO call1[VIA call2[,call3...,call9]]
+Mnemonic  :    U
+Default   :    CQ
+
+Parameter :    Call1     Call sign to be placed in the TO
+                         address field.
+
+               Call2-9   Optional digipeater call  list,  up
+to
+                         eight calls.
+
+Refer to  :    CONNECT
+------------------------------------------------------------
+UNPROTO  sets the digipeat and destination address fields or
+packets sent in the unconnected (unprotocol) mode.
+
+Unconnected packets are sent as  un-sequenced  I-frame  with
+the  destination  and  digipeat  fields  taken  from "call1"
+through  "call9"  options.     When  a  destination  is  not
+specified, unconnected packets are sent to "CQ".
+
+You can monitor unconnected packets sent from other packet
+stations by setting MONITOR ON.
+
+
+
+------------------------------------------------------------
+Command   :    USERS n
+Mnemonic  :    US
+Default   :    1
+
+Parameter :    n    0 to 10 specifies the number of active
+                    simultaneous connections that can be
+                    established with your TNC.
+
+Refer to  :    STREAMSW
+------------------------------------------------------------
+USERS  only  affects  the way that incoming connect requests
+are handled.  It does not affect the number  of  connections
+you initiate with your TNC.  For example:
+
+USERS 0   Allows  incoming  connections  on any free logical
+channel.
+
+USERS 1   Allows incoming connections on logical  channel  0
+only.
+
+USERS 2   Allows  incoming  connections on logical channel 0
+and 1.
+
+USERS 3   Allows incoming connections on logical channel  0,
+1 and 2, and so on, through USERS 10.
+
+
+
+------------------------------------------------------------
+Command   :    WRITE
+Mnemonic  :    W
+Default   :    Immediate Command
+
+Parameter :    none
+
+Refer to  :    "Using the Bulletin Board Feature" in the
+               Operating Instruction Manual.
+------------------------------------------------------------
+WRITE command write a file or message to BBS.
+
+
+
+
+------------------------------------------------------------
+Command   :    XFLOW ON/OFF
+Mnemonic  :    X
+Default   :    ON
+
+Parameter :    ON   XON/XOFF (software) flow control is
+                    activated.
+
+               OFF  XON/XOFF flow control is disabled -
+                    hardware control is enabled.
+
+Refer to  :    TRFLOW, TXFLOW, START, STOP, XON, XOFF,
+               FLOVER, RSFLOW
+------------------------------------------------------------
+When XFLOW is ON,  software flow control is in effect; it is
+assumed that the computer or terminal will  respond  to  the
+TNC's  start and stop characters defined by the XON and XOFF
+commands.
+
+When XFLOW is  OFF,  the  TNc  uses  hardware  flow  control
+command on the CTS  and RTS line.
+
+
+
+------------------------------------------------------------
+Command   :    XMITOK ON/OFF
+Mnemonic  :    XMITO
+Default   :    OFF
+
+Parameter :    ON   Transmit functions (PTT line) are
+                    active.
+
+               OFF  Transmit functions (PTT line) are
+                    disabled.
+
+Refer to  :    CONOK, DIGIPEAT, MYCALL
+------------------------------------------------------------
+When  XMITOK  is  OFF,  the  PTT line to your transmitter is
+disabled; the transmit function is inhibited.  All other TNC
+functions  remain  the  same.   Your TNC generates and sends
+packets as requested, but does not key the radio's PTT line.
+
+Use the XMITOK command at any time to ensure that  your  TNC
+does not transmit.
+
+Set  XMITOK OFF if you are absent and wish to leave your TNC
+on as a channel activity monitor.
+
+Set XMITOK OFF  for  testing  in  loopback  or  direct  wire
+connections when PTT operation is not required.
+
+
+
+------------------------------------------------------------
+Command   :    XOFF n
+Mnemonic  :    XO
+Default   :    $13 <CTRL-S>
+
+Parameter :    n    0 to $7F ( 0 to 127 decimal) specifies
+                    and ASCII code.
+
+Refer to  :    START, STOP, XFLOW, XON, TXFLOW
+------------------------------------------------------------
+Use  XOFF  to  select  the stop character to be used to stop
+input from the computer or terminal.
+
+You can enter the code in either hex or decimal.
+
+
+NOTE: You can entire the code in either hex or decimal.
+
+The Start character default value is <CTRL-Q>  for  computer
+data transfers.
+
+If  you  are  operating  in the Converse Mode and there is a
+chance that activity might fill the TNC's buffers,  you  can
+define  the Stop character as <CTRL-G> ($07),  which "beeps"
+many terminals.
+
+
+------------------------------------------------------------
+Command   :    XON n
+Mnemonic  :    XON
+Default   :    $11 <CTRL-Q>
+
+Parameter :    n    0 to $7F (0 through 127 decimal)
+                    specifies an  ASCII character code.
+
+Refer to:START, STOP, XFLOW, XOFF, TXFLOW
+------------------------------------------------------------
+XON selects the TNC start character  that  is  sent  to  the
+computer or terminal to restart input from the device.
+
+NOTE: You can entire the code in either hex or decimal.
+
+The  Start  character default value is <CTRL-Q> for computer
+data transfers.
+
+If you are operating in the Converse Mode  and  there  is  a
+chance  that activity might fill the TNC's buffers,  you can
+define the Stop character as <CTRL-G> ($07),  which  "beeps"
+many terminals.
+
