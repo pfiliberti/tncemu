@@ -1,6 +1,6 @@
 To compile you need to do the following:
 
-export $MACHTYPE
+export MACHTYPE
 make
 
 The makefile should detect the architecture based on the MACHTYPE environment variable. If it fails then
