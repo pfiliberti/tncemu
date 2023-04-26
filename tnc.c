@@ -261,7 +261,7 @@ struct tm *timeinfo;
         
   sin.sin_family=AF_INET;
 	sin.sin_addr.s_addr=INADDR_ANY;
-  if(!use_kiss) sin.sin_port=htons(10093);
+  if(!use_kiss) sin.sin_port=htons(atoi(port));
 
 	if ( bind(sock_out,(struct sockaddr *)&sin,sizeof(struct sockaddr_in)) == -1 )
     die("Error: Bind\n");
@@ -398,14 +398,18 @@ the machine you will be emulating on. */
         {
           if(RxCharIn_Idx)
           {
-            while(!state.iff1) total += Z80Emulate(&state, 2000 );
-            total += Z80Interrupt (&state, siob.registers[2] | 0x0c);   // ax25 char read int
+            while(!state.iff1) cycles = Z80Emulate(&state, 2000 );
+            cycles += Z80Interrupt (&state, siob.registers[2] | 0x0c);   // ax25 char read int
+            total += cycles;
+            sio_int += cycles;
           }
 
           if(ax25rdy)
           {
-            while(!state.iff1) total += Z80Emulate(&state, 2000 );
-            total += Z80Interrupt (&state, siob.registers[2] | 0x0e); // eof int
+            while(!state.iff1) cycles = Z80Emulate(&state, 2000 );
+            cycles += Z80Interrupt (&state, siob.registers[2] | 0x0e); // eof int
+            total += cycles;
+            sio_int += cycles;
           }
         }
         else
@@ -442,15 +446,19 @@ the machine you will be emulating on. */
 
           if(feedflag || abortflag )
           {
-            while(!state.iff1) total += Z80Emulate(&state, 2000 );
-            total += Z80Interrupt (&state, siob.registers[2] | 0x0a); // ext stat int
+            while(!state.iff1) cycles = Z80Emulate(&state, 2000 );
+            cycles += Z80Interrupt (&state, siob.registers[2] | 0x0a); // ext stat int
+            total += cycles;
+            sio_int += cycles;
           }
           else
           {
             if(siob.registers[1] & 2)
             {
-          // while(!state.iff1) total += Z80Emulate(&state, CYCLES_PER_STEP);
-              total += Z80Interrupt (&state, siob.registers[2] );
+          // while(!state.iff1) total += Z80Emulate(&state, 2000 );
+              cycles = Z80Interrupt (&state, siob.registers[2] );
+              total += cycles;
+              sio_int += cycles;
             }
           }
         }
