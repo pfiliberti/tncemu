@@ -1,0 +1,6 @@
+CLOCK IS AT 
+00004a00  00 00 00 00 00 00 00 00  00 00 00 00 00 15 05 27  |...............'|
+00004a10  12 26 9a f2 96 8c 6e a0  a6 9a 6f 53 68 44 69 73
+
+z80 code stores clock here; goal is to set it to the emulating machines rtc.
+4a0d y m d h m (seconds is somewhere else!!!)
