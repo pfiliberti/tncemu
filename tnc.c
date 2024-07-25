@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <errno.h>
@@ -31,10 +32,19 @@
 
 #define RAM_SAVE_FILENAME	"tnc.ram"
 
+#define CYCLES_PER_INT		2000 /*Cycles to run for each int processing */
+
 /* for udp socket */
 #define BUFLEN 2048	//Max length of buffer
+#define AX25_IN_MAXSIZE 5
 #define DEFAULT_PORT "10093"	//AXIP Port on BPQ node
 #define DEFAULT_HOST "192.168.10.252" // BPQ SERVER
+
+struct inQueue {
+unsigned char data[BUFLEN];
+unsigned int count;
+};
+
 
 /* Rom image is externally linked in. */
 extern unsigned char _binary_hk21rom_bin_start;
@@ -51,9 +61,16 @@ unsigned char   Ram[1 << 15];
 int sock_out;
 int activity,activity2;
 unsigned char Socket_Data_In[BUFLEN];
+
+
 unsigned char Ax25_Out[BUFLEN];
 unsigned char Ax25_In[BUFLEN];
 unsigned int  Ax25_In_Cnt, Ax25_Out_Cnt;
+struct inQueue       Ax25_In_Q[5];
+unsigned int  Ax25_In_Head = 0;
+unsigned int  Ax25_In_Tail = 0;
+unsigned int  Ax25_In_Dly = 0;
+
 unsigned char keybuf[16];
 unsigned char keyhead = 0;
 unsigned char keytail = 0;
@@ -62,7 +79,7 @@ unsigned char RxCharIn_Idx=0;
 unsigned char ax25rdy=0;
 unsigned char feedflag=0;
 unsigned char abortflag=0;
-unsigned char txundr_count;
+unsigned char txundr_count=0;
 unsigned char use_kiss=0;
 char service_port[]=DEFAULT_PORT;
 char host_addr[]=DEFAULT_HOST;
@@ -101,6 +118,10 @@ void die(char *);
 char tobcd(unsigned int);
 void print_usage(void);
 void print_info(void);
+bool Ax25_In_HasRoom(void);
+void Ax25_In_Insert(void);
+void Ax25_In_Remove(void);
+bool Ax25_In_HasData(void);
 
 /***************************************************************************************/
 
@@ -398,7 +419,7 @@ the machine you will be emulating on. */
         {
           if(RxCharIn_Idx)
           {
-            while(!state.iff1) cycles = Z80Emulate(&state, 2000 );
+            while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
             cycles += Z80Interrupt (&state, siob.registers[2] | 0x0c);   // ax25 char read int
             total += cycles;
             sio_int += cycles;
@@ -406,7 +427,7 @@ the machine you will be emulating on. */
 
           if(ax25rdy)
           {
-            while(!state.iff1) cycles = Z80Emulate(&state, 2000 );
+            while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
             cycles += Z80Interrupt (&state, siob.registers[2] | 0x0e); // eof int
             total += cycles;
             sio_int += cycles;
@@ -446,7 +467,7 @@ the machine you will be emulating on. */
 
           if(feedflag || abortflag )
           {
-            while(!state.iff1) cycles = Z80Emulate(&state, 2000 );
+            while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT );
             cycles += Z80Interrupt (&state, siob.registers[2] | 0x0a); // ext stat int
             total += cycles;
             sio_int += cycles;
@@ -455,7 +476,7 @@ the machine you will be emulating on. */
           {
             if(siob.registers[1] & 2)
             {
-          // while(!state.iff1) total += Z80Emulate(&state, 2000 );
+          // while(!state.iff1) total += Z80Emulate(&state, CYCES_PER_INT );
               cycles = Z80Interrupt (&state, siob.registers[2] );
               total += cycles;
               sio_int += cycles;
@@ -475,9 +496,18 @@ the machine you will be emulating on. */
         else total += Z80Interrupt (&state, siob.registers[2] | 8 );
       }
 
+      if(Ax25_In_HasData() && !RxCharIn_Idx && !ax25rdy && !txundr_count  && !Ax25_In_Dly ) /* do we have a socket */
+      {
+	 RxCharIn_Idx = 1; /* Let everyone know */
+         Ax25_In_Dly = 75;
+      }
+
+      if(Ax25_In_Dly && !RxCharIn_Idx && !txundr_count) Ax25_In_Dly--;
+
 /* here check if a socket is active but also check if we are in the middle of
     processing the previous socket by checking the RxCharIn_Idx & ax25rdy flags! */
-      if(socket_active && !RxCharIn_Idx && !ax25rdy) /* do we have a socket */
+//      if(socket_active && !RxCharIn_Idx && !ax25rdy) /* do we have a socket */
+      if(socket_active && Ax25_In_HasRoom()) 
       { 
 /* Here we check if there is any incoming data on udp socket */
         readfds = master; /* Copy because select etc changes it! */
@@ -520,16 +550,19 @@ the machine you will be emulating on. */
             else /* else just copy data to x25 buffer */
             {
               for(x=0; x < rxcnt; x++) 
-                Ax25_In[x] = Socket_Data_In[x]; 
+                Ax25_In_Q[Ax25_In_Head].data[x] = Socket_Data_In[x]; 
 
-              mycrc = compute_crc(Ax25_In, rxcnt-2);
+              mycrc = compute_crc(Ax25_In_Q[Ax25_In_Head].data, rxcnt-2);
 #ifdef DEBUG
-              printf("CRC=%2x RxCRC=%x%x\n",mycrc,Ax25_In[rxcnt-1],Ax25_In[rxcnt-2]);
+              printf("CRC=%2x RxCRC=%x%x head=%d tail=%d\n",mycrc,Ax25_In_Q[Ax25_In_Head].data[rxcnt-1],Ax25_In_Q[Ax25_In_Head].data[rxcnt-2],
+              Ax25_In_Head, Ax25_In_Tail);
 #endif
-              if( mycrc == ( (Ax25_In[rxcnt-1] << 8) + Ax25_In[rxcnt-2] ) ) /* crc check */
+              if( mycrc == ( (Ax25_In_Q[Ax25_In_Head].data[rxcnt-1] << 8) + Ax25_In_Q[Ax25_In_Head].data[rxcnt-2] ) ) /* crc check */
               {
-                Ax25_In_Cnt = rxcnt-1; /* adjust to get total # of bytes in buffer */
-                RxCharIn_Idx = 1; /* Let everyone know */
+                Ax25_In_Q[Ax25_In_Head].count = rxcnt-1; /* adjust to get total # of bytes in buffer */
+		Ax25_In_Insert();
+//		if(!RxCharIn_Idx && !ax25rdy) /* Can we accept another packet */
+//                  RxCharIn_Idx = 1; /* Let everyone know */
               }
             }
           }
@@ -572,7 +605,7 @@ the machine you will be emulating on. */
     }
 
 /* Here check activity and if none sleep so we're not a cpu hog */
-    if(RxCharIn_Idx || ax25rdy || feedflag || abortflag ) activity = 0;
+    if(Ax25_In_HasData() || RxCharIn_Idx || ax25rdy || feedflag || abortflag ) activity = 0;
     if(txundr_count ) activity = 0;
     if(keyhead != keytail) activity = 0;
 
@@ -668,12 +701,13 @@ int IO_in (int port)
       if(RxCharIn_Idx) 
       {
         activity = 0;
-        x = Ax25_In[RxCharIn_Idx-1];
+        x = Ax25_In_Q[Ax25_In_Tail].data[RxCharIn_Idx-1];
 //printf("%x\n",x);
         RxCharIn_Idx++;
-        if(RxCharIn_Idx == Ax25_In_Cnt+1) 
+        if(--Ax25_In_Q[Ax25_In_Tail].count == 0) 
         {
           RxCharIn_Idx = 0;
+          Ax25_In_Remove();
           ax25rdy=1;
         }
       }
@@ -863,6 +897,8 @@ int val = 0;
         {
           val |= 0x86; /* set eof detected and correct fraction bits! */
           ax25rdy = 0;
+          /* If input queue has more data retrigger to process next packet */
+          //if(Ax25_In_HasData()) RxCharIn_Idx=1;
         }
       }
 
@@ -1019,4 +1055,36 @@ void print_info(void)
   printf("-t target host ip address or dns name\n");
   printf("-p targt port (default 10093)\n");
   printf("-k Kiss Protocol (Default is ax25)\n");
+}
+
+bool Ax25_In_HasRoom(void)
+{
+  int next = Ax25_In_Head + 1;
+  if(next >= AX25_IN_MAXSIZE) 
+    next = 0;
+
+  if(next == Ax25_In_Tail)
+    return false;
+  else
+    return true;
+}
+
+void Ax25_In_Insert(void)
+{
+  if(++Ax25_In_Head >= AX25_IN_MAXSIZE) 
+    Ax25_In_Head = 0;
+}
+
+void Ax25_In_Remove(void)
+{
+  if(++Ax25_In_Tail >= AX25_IN_MAXSIZE) 
+    Ax25_In_Tail = 0;
+}
+
+bool Ax25_In_HasData(void)
+{
+  if(Ax25_In_Head != Ax25_In_Tail)
+    return(true);
+  else
+    return(false);
 }
