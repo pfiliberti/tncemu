@@ -62,10 +62,11 @@ int sock_out;
 int activity,activity2;
 unsigned char Socket_Data_In[BUFLEN];
 
-
+unsigned char Kiss_Ax25_In[BUFLEN];
 unsigned char Ax25_Out[BUFLEN];
-unsigned char Ax25_In[BUFLEN];
 unsigned int  Ax25_In_Cnt, Ax25_Out_Cnt;
+
+/* Input Queue to stack multiple incoming packets */
 struct inQueue       Ax25_In_Q[5];
 unsigned int  Ax25_In_Head = 0;
 unsigned int  Ax25_In_Tail = 0;
@@ -498,18 +499,17 @@ the machine you will be emulating on. */
 
       if(Ax25_In_HasData() && !RxCharIn_Idx && !ax25rdy && !txundr_count  && !Ax25_In_Dly ) /* do we have a socket */
       {
-	 RxCharIn_Idx = 1; /* Let everyone know */
-         Ax25_In_Dly = 75;
+        RxCharIn_Idx = 1; /* Let everyone know */
+        Ax25_In_Dly = 75; /* this is an arbitrary delay amount so emulator can process rx packets */
       }
 
       if(Ax25_In_Dly && !RxCharIn_Idx && !txundr_count) Ax25_In_Dly--;
 
 /* here check if a socket is active but also check if we are in the middle of
     processing the previous socket by checking the RxCharIn_Idx & ax25rdy flags! */
-//      if(socket_active && !RxCharIn_Idx && !ax25rdy) /* do we have a socket */
-      if(socket_active && Ax25_In_HasRoom()) 
+      if(socket_active && Ax25_In_HasRoom()) /* do we have a socket and room in Ax25 input Queue */
       { 
-/* Here we check if there is any incoming data on udp socket */
+        /* Here we check if there is any incoming data on udp socket */
         readfds = master; /* Copy because select etc changes it! */
         if (select(sock_out+1, &readfds, NULL, NULL, &tv) == -1)
         {
@@ -540,12 +540,13 @@ the machine you will be emulating on. */
             /* If using kiss protocol convert buffer back to ax25 data */
             if(use_kiss)
             {
-              kiss_unpack(Socket_Data_In, Ax25_In, &rxcnt);
-              for(x=0; x < rxcnt; x++) 
-                Ax25_In[x] = Ax25_In[x+1]; /* Remove Kiss Packet type */
+              kiss_unpack(Socket_Data_In, Kiss_Ax25_In, &rxcnt);
+              /* Copy packet to Ax25_In_Q and remove Kiss Packet Type */
+              for(x=0; x < rxcnt-1; x++) 
+                Ax25_In_Q[Ax25_In_Head].data[x] = Kiss_Ax25_In[x+1]; 
 
-              Ax25_In_Cnt = rxcnt-1; /* adjust to get total # of bytes left in buffer */
-              RxCharIn_Idx = 1; /* Let everyone know */
+              Ax25_In_Q[Ax25_In_Head].count = rxcnt-1; /* adjust to get total # of bytes in buffer */
+              Ax25_In_Insert();
             }
             else /* else just copy data to x25 buffer */
             {
@@ -560,9 +561,7 @@ the machine you will be emulating on. */
               if( mycrc == ( (Ax25_In_Q[Ax25_In_Head].data[rxcnt-1] << 8) + Ax25_In_Q[Ax25_In_Head].data[rxcnt-2] ) ) /* crc check */
               {
                 Ax25_In_Q[Ax25_In_Head].count = rxcnt-1; /* adjust to get total # of bytes in buffer */
-		Ax25_In_Insert();
-//		if(!RxCharIn_Idx && !ax25rdy) /* Can we accept another packet */
-//                  RxCharIn_Idx = 1; /* Let everyone know */
+                Ax25_In_Insert();
               }
             }
           }
@@ -898,6 +897,7 @@ int val = 0;
           val |= 0x86; /* set eof detected and correct fraction bits! */
           ax25rdy = 0;
           /* If input queue has more data retrigger to process next packet */
+          /* scratch that, this is done abocve after a delay period now.*/
           //if(Ax25_In_HasData()) RxCharIn_Idx=1;
         }
       }
