@@ -36,7 +36,7 @@
 
 /* for udp socket */
 #define BUFLEN 2048	//Max length of buffer
-#define AX25_IN_MAXSIZE 5
+#define AX25_IN_MAXSIZE 10
 #define DEFAULT_PORT "10093"	//AXIP Port on BPQ node
 #define DEFAULT_HOST "192.168.10.252" // BPQ SERVER
 
@@ -67,7 +67,7 @@ unsigned char Ax25_Out[BUFLEN];
 unsigned int  Ax25_In_Cnt, Ax25_Out_Cnt;
 
 /* Input Queue to stack multiple incoming packets */
-struct inQueue       Ax25_In_Q[5];
+struct inQueue       Ax25_In_Q[AX25_IN_MAXSIZE];
 unsigned int  Ax25_In_Head = 0;
 unsigned int  Ax25_In_Tail = 0;
 unsigned int  Ax25_In_Dly = 0;
