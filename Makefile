@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -O3 -fomit-frame-pointer -mtune=native
+CFLAGS = -Wall -O3 -funroll-loops -fomit-frame-pointer -mtune=native
 ROMIMAGE = hk21rom.bin
 
 ARCH = $(if $(findstring arm,$(MACHTYPE)),arm,none)
