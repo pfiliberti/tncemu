@@ -26,7 +26,7 @@
 #include "crc.h"
 #include "kiss.h"
 
-#define Z80_CPU_SPEED           4195200   /* In Hz. */
+#define Z80_CPU_SPEED           8195200   /* In Hz. */
 #define CYCLES_PER_STEP         (Z80_CPU_SPEED / 25)
 #define MAXIMUM_STRING_LENGTH   100
 
@@ -575,6 +575,7 @@ the machine you will be emulating on. */
       activity2 = 100;
       key=getchar();
       if(key == 0x0a) key=0x0d;
+      if(key == 0x7f) key=0x08;
 #ifdef DEBUG
       if(key == '&') RxCharIn_Idx=1; // Trigger to inject test ax25 packet
       else
