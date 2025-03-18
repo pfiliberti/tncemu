@@ -2,19 +2,28 @@ CC = gcc
 CFLAGS = -Wall -O3 -funroll-loops -fomit-frame-pointer -mtune=native
 ROMIMAGE = hk21rom.bin
 
-ARCH = $(if $(findstring arm,$(MACHTYPE)),arm,none)
+# Detect architecture automatically using uname
+UNAME := $(shell uname -m)
 
-ifeq ($(ARCH),none)
-ARCH = $(if $(findstring i386,$(MACHTYPE)),i386,none)
+ifeq ($(UNAME),armv7l)
+ARCH = arm
 endif
 
-ifeq ($(ARCH),none)
-ARCH = $(if $(findstring x86_64,$(MACHTYPE)),x86_64,none)
+ifeq ($(UNAME),aarch64)
+ARCH = aarch64
 endif
 
-ifeq ($(ARCH),none)
-$(info Cannot Determine Architecture!)
-exit
+ifeq ($(UNAME),i686)
+ARCH = i386
+endif
+
+ifeq ($(UNAME),x86_64)
+ARCH = x86_64
+endif
+
+# If ARCH is still empty, print an error
+ifeq ($(ARCH),)
+$(error Cannot Determine Architecture! Detected uname: $(UNAME))
 endif
 
 $(info Compiling for $(ARCH))
@@ -44,13 +53,13 @@ kiss.o: kiss.c kiss.h
 
 OBJECT_FILES = tnc.o ./z80emu/z80emu.o crc.o kiss.o
 
-tnc:	$(OBJECT_FILES)
+tnc: rom.o $(OBJECT_FILES)
 	$(CC) $(OBJECT_FILES) rom.o -o $@
 
-crc:	crc.o
+crc: crc.o
 	$(CC) crc.o -o $@
 
-kiss:	kiss.o
+kiss: kiss.o
 	$(CC) kiss.o -o $@
 
 ram:
@@ -63,18 +72,26 @@ ifeq ($(ARCH),arm)
 	.data=.data,alloc,load,data,contents $(ROMIMAGE) rom.o
 endif
 
+ifeq ($(ARCH),aarch64)
+	/usr/bin/objcopy --input binary --output elf64-littleaarch64 \
+	--binary-architecture aarch64 --rename-section \
+	.data=.data,alloc,load,data,contents $(ROMIMAGE) rom.o
+endif
+
 ifeq ($(ARCH),i386)
 	/usr/bin/objcopy --input binary --output elf32-i386 \
-	 --binary-architecture i386 --rename-section \
+	--binary-architecture i386 --rename-section \
 	.data=.data,alloc,load,data,contents $(ROMIMAGE) rom.o
 endif
 
 ifeq ($(ARCH),x86_64)
 	/usr/bin/objcopy --input binary --output elf64-x86-64 \
-	 --binary-architecture i386 --rename-section \
+	--binary-architecture i386:x86-64 --rename-section \
 	.data=.data,alloc,load,data,contents $(ROMIMAGE) rom.o
 endif
 
 clean:
 	rm -f tnc tnc.ram *.o ./z80emu/*.o 
+
+.PHONY: all clean rom ram
 
