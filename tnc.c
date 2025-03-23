@@ -40,6 +40,9 @@
 #define DEFAULT_PORT "10093"	//AXIP Port on BPQ node
 #define DEFAULT_HOST "192.168.10.252" // BPQ SERVER
 
+/* Location in ram where next bbs msg # is kept lsb/msb */
+#define NextMsgLoc 0x4f06
+
 struct inQueue {
 unsigned char data[BUFLEN];
 unsigned int count;
@@ -87,6 +90,7 @@ char host_addr[]=DEFAULT_HOST;
 char *port;
 char *target_host;
 
+unsigned int PrevbbsMsgNo;
 
 /* for test ax25 injection packet 1st byte is filler */
 //unsigned char TestAx25[22] = { 0x00, 0x86, 0xa2, 0x40, 0x40, 0x40, 0x40, 0x60, 0xae, 0x6e, 0x9a,
@@ -123,6 +127,8 @@ bool Ax25_In_HasRoom(void);
 void Ax25_In_Insert(void);
 void Ax25_In_Remove(void);
 bool Ax25_In_HasData(void);
+unsigned int GetNextBbsMsgNo(void);
+void WriteRamfile(void);
 
 /***************************************************************************************/
 
@@ -260,6 +266,13 @@ struct tm *timeinfo;
   Rom[0x2dc2] = 'g';
 
 
+/* initialize the previous bbs msg # to current in memory 
+   for later comparison to see if a msg was added */
+  PrevbbsMsgNo = GetNextBbsMsgNo();
+#if DEBUG
+  printf("Next BBS Msg #=%u\n",PrevbbsMsgNo);
+#endif
+
 /* set udp target info */
   socket_active=1; /* assume connect will work */
 
@@ -380,6 +393,12 @@ better but for now it works */
       x= x - ((x / 100) * 100);
       Ram[0x4f0f] = tobcd(x);
 
+      /* Check if any new bbs msgs have arrived and if so save ram to disk */
+      if( PrevbbsMsgNo != GetNextBbsMsgNo())
+      {
+          PrevbbsMsgNo = GetNextBbsMsgNo();
+          WriteRamfile();
+      }
 
       /* if using kiss protocol check for any paramter changes and
       update protocol if so */
@@ -992,20 +1011,18 @@ void Memory_Write_Word(unsigned int address, unsigned int data)
 // Define the function to be called when ctrl-c (SIGINT) signal is sent to process
 void signal_callback_handler(int signum)
 {
-   printf("Caught signal %d, saving ram to %s\n",signum,RAM_SAVE_FILENAME);
-   // Cleanup and close up stuff here
+  printf("Caught signal %d, saving ram to %s\n",signum,RAM_SAVE_FILENAME);
+  // Cleanup and close up stuff here
 
-   /* turn on canonical mode and echo on terminal */
-   system("stty icanon echo");
+  /* turn on canonical mode and echo on terminal */
+  system("stty icanon echo");
 
-   FILE* file= fopen(RAM_SAVE_FILENAME,"wb");
-   fwrite(Ram, 1, 32768, file);
-   fclose (file);
+  WriteRamfile();
 
-   close (sock_out);
-   
-   // Terminate program
-   exit(signum);
+  close (sock_out);
+  
+  // Terminate program
+  exit(signum);
 }
 
 int kbhit()
@@ -1088,4 +1105,17 @@ bool Ax25_In_HasData(void)
     return(true);
   else
     return(false);
+}
+
+unsigned int GetNextBbsMsgNo(void)
+{
+  int msg = Ram[NextMsgLoc] + Ram[NextMsgLoc+1] * 256;
+  return msg;
+}
+
+void WriteRamfile(void)
+{
+   FILE* file= fopen(RAM_SAVE_FILENAME,"wb");
+   fwrite(Ram, 1, 32768, file);
+   fclose (file);
 }
