@@ -1,11 +1,21 @@
-To compile you should have dev tools installed and just do a make.
+The makefile should detect the architecture automatically now.
+
+To compile you should have dev tools installed and just do a:
+
+make ROMSRC=romimagefile
+
 It should automatcally detect your machine type now and compile accordingly.
 
-To compile you need to do the following:
+The binary images are in the folder binary_dumps
 
-make
+To compile the emulator to use the HK21 rom image you need to do the following:
 
-The makefile should detect the architecture automatically now.
+make ROMSRC=binary_dumps/hk21rom.bin
+
+There is also a u21 rom image you can play with that has the kiss protocol in it.
+We plan on adding a command line switch soon to redirect console i/o to stdin/out
+so you can talk to the tnc using a kiss terminal or other software. Still experimenal.
+
 
 The makefile automatically copys a default tnc.ram from the binary_dumps directory. This is an initial
 ram image for the tnc with a lot of the tnc's configuration options preset. You will need to set mycall
