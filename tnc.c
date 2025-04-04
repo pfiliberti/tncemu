@@ -1178,6 +1178,7 @@ void ApplyRomPatches(void)
 
     /* Patch for rom we can manually patch later, Needed? */
 //    Rom[0x5032] = Rom[0x5041];
+    Rom[0x5032] = 0x3e;
         
     /* Stuff NOPs to disable strange obfuscation of text */
     for(x=0; x< 11; x++) Rom[0x47f7+x] = 0;
@@ -1185,7 +1186,7 @@ void ApplyRomPatches(void)
 
     /* Throw some custom text into eprom for when user logs into bbs */
     /* Replaces "Heath System" */
-//    RewriteBbsMsg(0x2dad);
+    RewriteBbsMsg(0x2dad);
 
   }
   else if(RomImageType == 2) /* Apply u21 Patches */
@@ -1194,7 +1195,8 @@ void ApplyRomPatches(void)
     bbsmsg_address = 0x4f2e; /* where tnc stores msg count */
 
     /* Patch for rom we can manually patch later, Needed? */
-    Rom[0x5032] = Rom[0x5041];
+    //Rom[0x5878] = Rom[0x5887];
+    Rom[0x5878] = 0x3E;
         
     /* Stuff NOPs to disable strange obfuscation of text */
     for(x=0; x< 11; x++) Rom[0x4fe2+x] = 0;
@@ -1202,7 +1204,7 @@ void ApplyRomPatches(void)
 
     /* Throw some custom text into eprom for when user logs into bbs */
     /* Replaces "Tasco System" */
-//    RewriteBbsMsg(0x314c);
+    RewriteBbsMsg(0x314c);
 /*
     Rom[0x314c] = 'H';
     Rom[0x314d] = 'a';
