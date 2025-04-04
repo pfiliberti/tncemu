@@ -40,9 +40,6 @@
 #define DEFAULT_PORT "10093"	//AXIP Port on BPQ node
 #define DEFAULT_HOST "192.168.10.252" // BPQ SERVER
 
-/* Location in ram where next bbs msg # is kept lsb/msb */
-#define NextMsgLoc 0x4f06
-
 struct inQueue {
 unsigned char data[BUFLEN];
 unsigned int count;
@@ -50,13 +47,13 @@ unsigned int count;
 
 
 /* Rom image is externally linked in. */
-extern unsigned char _binary_hk21rom_bin_start;
-extern unsigned char _binary_hk21rom_bin_end;
-extern unsigned char _binary_hk21rom_bin_size;
+extern unsigned char _binary_devicerom_bin_start;
+extern unsigned char _binary_devicerom_bin_end;
+extern unsigned char _binary_devicerom_bin_size;
 
 /* The TNC has 32k of RAM and 32k of ROM.
    Rom is addressed starting at 0 and Ram at 0x8000 */
-unsigned char *Rom = &_binary_hk21rom_bin_start;
+unsigned char *Rom = &_binary_devicerom_bin_start;
 
 //unsigned char   Rom[1 << 15]; 
 unsigned char   Ram[1 << 15];
@@ -74,7 +71,9 @@ struct inQueue       Ax25_In_Q[AX25_IN_MAXSIZE];
 unsigned int  Ax25_In_Head = 0;
 unsigned int  Ax25_In_Tail = 0;
 unsigned int  Ax25_In_Dly = 0;
+unsigned int  clock_address = 0;
 
+unsigned char RomImageType = 0; /*0 = generic, 1=hk21 2=u21 */
 unsigned char keybuf[16];
 unsigned char keyhead = 0;
 unsigned char keytail = 0;
@@ -91,6 +90,7 @@ char *port;
 char *target_host;
 
 unsigned int PrevbbsMsgNo;
+unsigned int bbsmsg_address = 0;
 
 /* for test ax25 injection packet 1st byte is filler */
 //unsigned char TestAx25[22] = { 0x00, 0x86, 0xa2, 0x40, 0x40, 0x40, 0x40, 0x60, 0xae, 0x6e, 0x9a,
@@ -129,6 +129,8 @@ void Ax25_In_Remove(void);
 bool Ax25_In_HasData(void);
 unsigned int GetNextBbsMsgNo(void);
 void WriteRamfile(void);
+void Detect_Rom_Version(void);
+void ApplyRomPatches(void);
 
 /***************************************************************************************/
 
@@ -233,38 +235,11 @@ struct tm *timeinfo;
     fclose(file);
   }
 
-/* Patch for rom we can manually patch later, Needed? */
-  Rom[0x5032] = Rom[0x5041];
-        
-/* Stuff NOPs to disable strange obfuscation of text */
-  for(x=0x47f7; x< 0x4802; x++) Rom[x] = 0;
-  Rom[0x4803] = 0;
+/* Probe Rom Image to detect version and patch accordingly */
+  Detect_Rom_Version();
 
-/* Throw some custom text into eprom for when user logs into bbs */
-  Rom[0x2dad] = 'H';
-  Rom[0x2dae] = 'a';
-  Rom[0x2daf] = 'p';
-  Rom[0x2db0] = 'p';
-  Rom[0x2db1] = 'y';
-  Rom[0x2db2] = ' ';
-  Rom[0x2db3] = 'i';
-  Rom[0x2db4] = 'f';
-  Rom[0x2db5] = ' ';
-  Rom[0x2db6] = 'y';
-  Rom[0x2db7] = 'o';
-  Rom[0x2db8] = 'u';
-  Rom[0x2db9] = 0;
-
-  Rom[0x2dba] = ' ';
-  Rom[0x2dbb] = 'P';
-  Rom[0x2dbc] = 'o';
-  Rom[0x2dbd] = 's';
-  Rom[0x2dbe] = 't';
-  Rom[0x2dbf] = ' ';
-  Rom[0x2dc0] = 'M';
-  Rom[0x2dc1] = 's';
-  Rom[0x2dc2] = 'g';
-
+/* Apply any rom patches */
+  ApplyRomPatches();
 
 /* initialize the previous bbs msg # to current in memory 
    for later comparison to see if a msg was added */
@@ -376,22 +351,25 @@ better but for now it works */
       timer_int = 0;
       total += Z80Interrupt (&state, 0x10 );
 
-      /* here update tnc time with our time */
-      time(&rawtime);
-      timeinfo = localtime (&rawtime);
-      x= timeinfo->tm_sec;
-      Ram[0x4f0a] = tobcd(x);
-      x= timeinfo->tm_min;
-      Ram[0x4f0b] = tobcd(x);
-      x= timeinfo->tm_hour;
-      Ram[0x4f0c] = tobcd(x);
-      x= timeinfo->tm_mday;
-      Ram[0x4f0d] = tobcd(x);
-      x= timeinfo->tm_mon;
-      Ram[0x4f0e] = tobcd(x+1);
-      x= timeinfo->tm_year;
-      x= x - ((x / 100) * 100);
-      Ram[0x4f0f] = tobcd(x);
+      /* here update tnc time with our time if we can */
+      if( clock_address > 0 )
+      {
+        time(&rawtime);
+        timeinfo = localtime (&rawtime);
+        x= timeinfo->tm_sec;
+        Ram[clock_address] = tobcd(x);
+        x= timeinfo->tm_min;
+        Ram[clock_address+1] = tobcd(x);
+        x= timeinfo->tm_hour;
+        Ram[clock_address+2] = tobcd(x);
+        x= timeinfo->tm_mday;
+        Ram[clock_address+3] = tobcd(x);
+        x= timeinfo->tm_mon;
+        Ram[clock_address+4] = tobcd(x+1);
+        x= timeinfo->tm_year;
+        x= x - ((x / 100) * 100);
+        Ram[clock_address+5] = tobcd(x);
+      }
 
       /* Check if any new bbs msgs have arrived and if so save ram to disk */
       if( PrevbbsMsgNo != GetNextBbsMsgNo())
@@ -1109,7 +1087,11 @@ bool Ax25_In_HasData(void)
 
 unsigned int GetNextBbsMsgNo(void)
 {
-  int msg = Ram[NextMsgLoc] + Ram[NextMsgLoc+1] * 256;
+  int msg = 0;
+  if(bbsmsg_address > 0)
+  {
+    msg = Ram[bbsmsg_address] + Ram[bbsmsg_address+1] * 256;
+  }
   return msg;
 }
 
@@ -1119,3 +1101,143 @@ void WriteRamfile(void)
    fwrite(Ram, 1, 32768, file);
    fclose (file);
 }
+
+void Detect_Rom_Version(void)
+{
+
+  int x;
+  static unsigned char matchbytes[] = {0xcb,0x40,0x28,0x03,0x07,0x18,0x01,0x0f,0x0d,0x20,0xf5,0xc1,0xa8};
+
+  /* check to see if rom is a hk21 rom */
+  bool match=true;
+  for(x=0; x< 13; x++)
+  {
+    if(Rom[0x47f7 + x] != matchbytes[x])
+    {
+      match=false;
+      break;
+    }
+  }
+
+  if(match) RomImageType=1;
+  else
+  {
+    match=true;
+    /* check to see if rom is a u21 rom */
+    for(x=0; x< 13; x++)
+    {
+      if(Rom[0x4fe2 + x] != matchbytes[x])
+      {
+       match=false;
+        break;
+      }
+    }
+
+    if(match) RomImageType=2;
+  }
+
+//#ifdef DEBUG
+
+  switch(RomImageType)
+  {
+    case 0:
+      printf("Unknown Rom Detected\n");
+    break;
+
+    case 1:
+      printf("HK21 Rom Detected\n");
+    break;
+
+    case 2:
+      printf("u21 Rom Detected/n");
+    break;
+
+    default:
+    break;
+  }
+//#endif
+
+}
+
+void ApplyRomPatches(void)
+{
+  int x;
+
+  if(RomImageType == 1) /* Apply HK21 Patches */
+  {
+    clock_address = 0x4f0a; /* Where tnc keeps time */
+    bbsmsg_address = 0x4f06; /* where tnc stores msg count */
+
+
+
+    /* Patch for rom we can manually patch later, Needed? */
+    Rom[0x5032] = Rom[0x5041];
+        
+    /* Stuff NOPs to disable strange obfuscation of text */
+    for(x=0; x< 13; x++) Rom[0x47f7+x] = 0;
+
+    /* Throw some custom text into eprom for when user logs into bbs */
+    /* Replaces "Heath System" */
+    Rom[0x2dad] = 'H';
+    Rom[0x2dae] = 'a';
+    Rom[0x2daf] = 'p';
+    Rom[0x2db0] = 'p';
+    Rom[0x2db1] = 'y';
+    Rom[0x2db2] = ' ';
+    Rom[0x2db3] = 'i';
+    Rom[0x2db4] = 'f';
+    Rom[0x2db5] = ' ';
+    Rom[0x2db6] = 'y';
+    Rom[0x2db7] = 'o';
+    Rom[0x2db8] = 'u';
+    Rom[0x2db9] = 0;
+
+    Rom[0x2dba] = ' ';
+    Rom[0x2dbb] = 'P';
+    Rom[0x2dbc] = 'o';
+    Rom[0x2dbd] = 's';
+    Rom[0x2dbe] = 't';
+    Rom[0x2dbf] = ' ';
+    Rom[0x2dc0] = 'M';
+    Rom[0x2dc1] = 's';
+    Rom[0x2dc2] = 'g';
+  }
+  else if(RomImageType == 2) /* Apply u21 Patches */
+  {
+    clock_address = 0x4f32; /* Where tnc keeps time */
+    bbsmsg_address = 0x4f2e; /* where tnc stores msg count */
+
+    /* Patch for rom we can manually patch later, Needed? */
+//    Rom[0x5032] = Rom[0x5041];
+        
+    /* Stuff NOPs to disable strange obfuscation of text */
+    for(x=0; x< 13; x++) Rom[0x4fe2+x] = 0;
+
+    /* Throw some custom text into eprom for when user logs into bbs */
+    /* Replaces "Tasco System" */
+    Rom[0x314c] = 'H';
+    Rom[0x314d] = 'a';
+    Rom[0x314e] = 'p';
+    Rom[0x314f] = 'p';
+    Rom[0x3150] = 'y';
+    Rom[0x3151] = ' ';
+    Rom[0x3152] = 'i';
+    Rom[0x3153] = 'f';
+    Rom[0x3154] = ' ';
+    Rom[0x3155] = 'y';
+    Rom[0x3156] = 'o';
+    Rom[0x3157] = 'u';
+    Rom[0x3158] = 0;
+
+    Rom[0x3159] = ' ';
+    Rom[0x315a] = 'P';
+    Rom[0x315b] = 'o';
+    Rom[0x315c] = 's';
+    Rom[0x315d] = 't';
+    Rom[0x315e] = ' ';
+    Rom[0x315f] = 'M';
+    Rom[0x3160] = 's';
+    Rom[0x3161] = 'g';
+  }
+}
+
