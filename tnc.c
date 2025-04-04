@@ -39,6 +39,7 @@
 #define AX25_IN_MAXSIZE 10
 #define DEFAULT_PORT "10093"	//AXIP Port on BPQ node
 #define DEFAULT_HOST "192.168.10.252" // BPQ SERVER
+#define DEFAULT_BBS_MSG "Happy if u post msg"
 
 struct inQueue {
 unsigned char data[BUFLEN];
@@ -84,10 +85,12 @@ unsigned char feedflag=0;
 unsigned char abortflag=0;
 unsigned char txundr_count=0;
 unsigned char use_kiss=0;
-char service_port[]=DEFAULT_PORT;
-char host_addr[]=DEFAULT_HOST;
+char service_port[] = DEFAULT_PORT;
+char host_addr[] = DEFAULT_HOST;
+char defbbsmsg[] = DEFAULT_BBS_MSG;
 char *port;
 char *target_host;
+char *bbsmsg;
 
 unsigned int PrevbbsMsgNo;
 unsigned int bbsmsg_address = 0;
@@ -131,6 +134,7 @@ unsigned int GetNextBbsMsgNo(void);
 void WriteRamfile(void);
 void Detect_Rom_Version(void);
 void ApplyRomPatches(void);
+void RewriteBbsMsg(int);
 
 /***************************************************************************************/
 
@@ -142,9 +146,10 @@ int option = 0;
 /* Set Default for target host and port */
 	target_host=host_addr;
 	port=service_port;
+	bbsmsg=defbbsmsg;
 
 /* Parse command line options */
-  while ((option = getopt(argc, argv,"kht:p:")) != -1) {
+  while ((option = getopt(argc, argv,"kht:p:m:")) != -1) {
     switch (option) 
     {
       case 'k' : use_kiss = 1;
@@ -153,6 +158,8 @@ int option = 0;
         break;
       case 'p' : port = optarg;
         break;
+      case 'm' : bbsmsg = optarg;
+	break;
       case 'h' : print_info();
         die("Exiting...");
         break;
@@ -1040,7 +1047,7 @@ char result;
 
 void print_usage(void)
 {
-  printf("Usage: tnc [-t host] [-p port] [-k]\n");
+  printf("Usage: tnc [-t host] [-p port] [-k] [-m message]\n");
   printf("Try tnc -h for more information.\n");
 }
 
@@ -1051,6 +1058,7 @@ void print_info(void)
   printf("-t target host ip address or dns name\n");
   printf("-p targt port (default 10093)\n");
   printf("-k Kiss Protocol (Default is ax25)\n");
+  printf("-m Bulletin Board Welcome Msg \"Message\" Max 21 Chars!\n");
 }
 
 bool Ax25_In_HasRoom(void)
@@ -1168,39 +1176,17 @@ void ApplyRomPatches(void)
     clock_address = 0x4f0a; /* Where tnc keeps time */
     bbsmsg_address = 0x4f06; /* where tnc stores msg count */
 
-
-
     /* Patch for rom we can manually patch later, Needed? */
-    Rom[0x5032] = Rom[0x5041];
+//    Rom[0x5032] = Rom[0x5041];
         
     /* Stuff NOPs to disable strange obfuscation of text */
-    for(x=0; x< 13; x++) Rom[0x47f7+x] = 0;
+    for(x=0; x< 11; x++) Rom[0x47f7+x] = 0;
+    Rom[0x47f7+12] = 0;
 
     /* Throw some custom text into eprom for when user logs into bbs */
     /* Replaces "Heath System" */
-    Rom[0x2dad] = 'H';
-    Rom[0x2dae] = 'a';
-    Rom[0x2daf] = 'p';
-    Rom[0x2db0] = 'p';
-    Rom[0x2db1] = 'y';
-    Rom[0x2db2] = ' ';
-    Rom[0x2db3] = 'i';
-    Rom[0x2db4] = 'f';
-    Rom[0x2db5] = ' ';
-    Rom[0x2db6] = 'y';
-    Rom[0x2db7] = 'o';
-    Rom[0x2db8] = 'u';
-    Rom[0x2db9] = 0;
+//    RewriteBbsMsg(0x2dad);
 
-    Rom[0x2dba] = ' ';
-    Rom[0x2dbb] = 'P';
-    Rom[0x2dbc] = 'o';
-    Rom[0x2dbd] = 's';
-    Rom[0x2dbe] = 't';
-    Rom[0x2dbf] = ' ';
-    Rom[0x2dc0] = 'M';
-    Rom[0x2dc1] = 's';
-    Rom[0x2dc2] = 'g';
   }
   else if(RomImageType == 2) /* Apply u21 Patches */
   {
@@ -1208,13 +1194,16 @@ void ApplyRomPatches(void)
     bbsmsg_address = 0x4f2e; /* where tnc stores msg count */
 
     /* Patch for rom we can manually patch later, Needed? */
-//    Rom[0x5032] = Rom[0x5041];
+    Rom[0x5032] = Rom[0x5041];
         
     /* Stuff NOPs to disable strange obfuscation of text */
-    for(x=0; x< 13; x++) Rom[0x4fe2+x] = 0;
+    for(x=0; x< 11; x++) Rom[0x4fe2+x] = 0;
+    Rom[0x4fe2+12] = 0;
 
     /* Throw some custom text into eprom for when user logs into bbs */
     /* Replaces "Tasco System" */
+//    RewriteBbsMsg(0x314c);
+/*
     Rom[0x314c] = 'H';
     Rom[0x314d] = 'a';
     Rom[0x314e] = 'p';
@@ -1237,7 +1226,36 @@ void ApplyRomPatches(void)
     Rom[0x315e] = ' ';
     Rom[0x315f] = 'M';
     Rom[0x3160] = 's';
-    Rom[0x3161] = 'g';
+    Rom[0x3161] = 'g';*/
+  }
+
+}
+
+void RewriteBbsMsg(int addr)
+{
+  int x;
+
+  for(x=0; x<22; x++)
+  {
+    Rom[addr+x] = 0x20; // space char
+  }
+
+  Rom[addr+12] = 0; // Plant terminator
+
+  char *txt = bbsmsg;
+    
+  for(x=0; x<12; x++)
+  {
+    if(*txt == 0) break;
+    Rom[addr+x] = *txt++;
+  }
+    
+  if(*txt == 0) return;
+
+  for(x=13; x<22; x++)
+  {
+    if(*txt == 0) break;
+    Rom[addr+x] = *txt++;
   }
 }
 
