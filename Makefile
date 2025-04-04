@@ -1,6 +1,20 @@
+# Use ROMSRC to specify an input file, which will be copied to devicerom.bin
+ROMSRC ?=
+ROMIMAGE = devicerom.bin
+
+# If ROMSRC is set, copy it to devicerom.bin before anything else builds
+ifeq ($(strip $(ROMSRC)),)
+ROM_PREP :=
+else
+ROM_PREP := prepare_rom
+endif
+
+# Get basename (no path), then remove extension
+ROMBASE = $(basename $(notdir $(ROMSRC)))
+RAMFILE = $(if $(ROMSRC),$(ROMBASE).ram,tnc.ram)
+
 CC = gcc
 CFLAGS = -Wall -O3 -funroll-loops -fomit-frame-pointer -mtune=native
-ROMIMAGE = hk21rom.bin
 
 # Detect architecture automatically using uname
 UNAME := $(shell uname -m)
@@ -32,7 +46,7 @@ ifeq ($(ARCH),arm)
 DEFINES = -DSPEED_PI
 endif
 
-all: rom ram tnc
+all: $(ROM_PREP) rom ram tnc
 
 tables.h: ./z80emu/maketables.c
 	$(CC) $(CFLAGS) $< -o ./z80emu/maketables
@@ -53,6 +67,9 @@ kiss.o: kiss.c kiss.h
 
 OBJECT_FILES = tnc.o ./z80emu/z80emu.o crc.o kiss.o
 
+prepare_rom:
+	cp $(ROMSRC) $(ROMIMAGE)
+
 tnc: rom.o $(OBJECT_FILES)
 	$(CC) $(OBJECT_FILES) rom.o -o $@
 
@@ -63,7 +80,7 @@ kiss: kiss.o
 	$(CC) kiss.o -o $@
 
 ram:
-	cp ./binary_dumps/tnc.ram .
+	cp ./binary_dumps/$(RAMFILE) tnc.ram
 
 rom:
 ifeq ($(ARCH),arm)
