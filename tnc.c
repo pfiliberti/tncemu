@@ -251,7 +251,7 @@ struct tm *timeinfo;
 /* initialize the previous bbs msg # to current in memory 
    for later comparison to see if a msg was added */
   PrevbbsMsgNo = GetNextBbsMsgNo();
-#if DEBUG
+#ifdef DEBUG
   printf("Next BBS Msg #=%u\n",PrevbbsMsgNo);
 #endif
 
