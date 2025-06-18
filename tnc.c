@@ -63,7 +63,9 @@ int sock_out;
 int activity,activity2;
 unsigned char Socket_Data_In[BUFLEN];
 
+unsigned char Kiss_Data_Out[BUFLEN];
 unsigned char Kiss_Ax25_In[BUFLEN];
+
 unsigned char Ax25_Out[BUFLEN];
 unsigned int  Ax25_In_Cnt, Ax25_Out_Cnt;
 
@@ -318,10 +320,10 @@ struct tm *timeinfo;
     for(x=1; x< NUM_KISS_PARMS; x++) /* start 1 skip txdelay for now */
     {
       ax25_parms[x] = Ram[ax25_parm_location[x]];
-      Socket_Data_In[0] = x+1; /* Parm index for command */
-      Socket_Data_In[1] = ax25_parms[x];
+      Kiss_Data_Out[0] = x+1; /* Parm index for command */
+      Kiss_Data_Out[1] = ax25_parms[x];
       rxcnt = 2; /* 2 bytes to encapsulate */
-      kiss_pack(Ax25_Out, Socket_Data_In, &rxcnt);
+      kiss_pack(Ax25_Out, Kiss_Data_Out, &rxcnt);
       Ax25_Out_Cnt = rxcnt;
       if ((x = sendto(sock_out, Ax25_Out, Ax25_Out_Cnt, 0,
         servinfo->ai_addr, servinfo->ai_addrlen)) == -1)
@@ -394,10 +396,10 @@ better but for now it works */
           if(ax25_parms[x] != Ram[ax25_parm_location[x]] )
           {
             ax25_parms[x] = Ram[ax25_parm_location[x]];
-            Socket_Data_In[0] = x+1; /* Parm index for command */
-            Socket_Data_In[1] = ax25_parms[x];
+            Kiss_Data_Out[0] = x+1; /* Parm index for command */
+            Kiss_Data_Out[1] = ax25_parms[x];
             rxcnt = 2; /* 2 bytes to encapsulate */
-            kiss_pack(Ax25_Out, Socket_Data_In, &rxcnt);
+            kiss_pack(Ax25_Out, Kiss_Data_Out, &rxcnt);
             Ax25_Out_Cnt = rxcnt;
             if ((x = sendto(sock_out, Ax25_Out, Ax25_Out_Cnt, 0,
               servinfo->ai_addr, servinfo->ai_addrlen)) == -1)
@@ -456,10 +458,10 @@ the machine you will be emulating on. */
                 }
                 else /* else kiss encapsulate with kiss protocol */
                 {
-                  Socket_Data_In[0] = 0; /* kiss type data */
-                  for(x=0; x< Ax25_Out_Cnt; x++) Socket_Data_In[x+1] = Ax25_Out[x];
+                  Kiss_Data_Out[0] = 0; /* kiss type data */
+                  for(x=0; x< Ax25_Out_Cnt; x++) Kiss_Data_Out[x+1] = Ax25_Out[x];
                   rxcnt = Ax25_Out_Cnt + 1; /* add 1 for the kiss type byte */
-                  kiss_pack(Ax25_Out, Socket_Data_In, &rxcnt);
+                  kiss_pack(Ax25_Out, Kiss_Data_Out, &rxcnt);
                   Ax25_Out_Cnt = rxcnt;
                 }
 
