@@ -14,6 +14,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+extern int IO_in (int);
+extern void IO_out (int, int );
+extern unsigned int Memory_Read_Byte(unsigned int);
+extern unsigned int Memory_Read_Word(unsigned int);
+extern void Memory_Write_Byte(unsigned int, unsigned int);
+extern void Memory_Write_Word(unsigned int, unsigned int);
+
+
 /* Indirect (HL) or prefixed indexed (IX + d) and (IY + d) memory operands are
  * encoded using the 3 bits "110" (0x06).
  */
@@ -189,8 +197,8 @@ int Z80Interrupt (Z80_STATE *state, int data_on_bus)
                         default: {
                                 SP -= 2;
                                 Z80_WRITE_WORD(SP, state->pc);
-                                state->pc = Rom[(state->i << 8 | data_on_bus)];
-                                state->pc += ( Rom[(state->i << 8 | (data_on_bus +1) ) ] ) << 8 ;
+                                state->pc = Memory_Read_Byte(state->i << 8 | data_on_bus);
+                                state->pc += ( Memory_Read_Byte(state->i << 8 | (data_on_bus +1) ) ) << 8 ;
 /*printf("int @ %x\n",state->pc);*/
 
                                 return 19;

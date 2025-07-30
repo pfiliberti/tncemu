@@ -247,8 +247,6 @@ typedef struct {
  * system calls.
  */
 
-#include "../tnc.h"
-
 #define Z80_FETCH_BYTE(address, x)                                      \
 {                                                                       \
         (x) = Memory_Read_Byte(address);                                \
