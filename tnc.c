@@ -22,6 +22,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include "./z80emu/z80emu.h"
+#include "tnc.h"
 #include "sio.h"
 #include "crc.h"
 #include "kiss.h"
@@ -929,33 +930,6 @@ int val = 0;
 //  sio->state = sio->state ^ 0x01; /* flip state */
 
   return val;
-}
-
-/* Emulate CP/M bdos call 5 functions 2 (output character on screen) and 9
- * (output $-terminated string to screen).
- */
-
-void SystemCall (Z80_STATE *state)
-{
-  if (state->registers.byte[Z80_C] == 2)
-    printf("%c", state->registers.byte[Z80_E]);
-
-  else if (state->registers.byte[Z80_C] == 9)
-  {
-int     i, c;
-
-    for (i = state->registers.word[Z80_DE], c = 0; 
-            Ram[i] != '$';
-            i++)
-    {
-      printf("%c", Ram[i & 0xffff]);
-      if (c++ > MAXIMUM_STRING_LENGTH)
-      {
-        fprintf(stderr, "String to print is too long!\n");
-        exit(EXIT_FAILURE);
-      }
-    }
-  }
 }
 
 /* Memory Access Functions go here */
