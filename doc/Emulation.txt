@@ -135,6 +135,21 @@ IO out 4e to port f1
 
 IO out 0 to port 1a
 
+
+-------------------------------------------------------------------------
+Values written to CTC Chan 0 for serial terminal baud rates
+
+BAUD	CTC0 Written Data
+75 	27,8
+150	27,4 or 7,40
+300 	27,2 or 7,20
+600 	7,10
+1200 	7,8
+2400 	7,4
+4800 	7,2
+9600 	7,1
+
+
 -------------------------------------------------------------------------
 Variables stored in certain ram memory locations used to configure
 remote side of future kiss protocol.
