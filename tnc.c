@@ -42,6 +42,9 @@
 #define DEFAULT_HOST "192.168.10.252" // BPQ SERVER
 #define DEFAULT_BBS_MSG "Happy if u post msg"
 
+/* bit in tnc flags for daytime cmd */
+#define DAYTIME_CMD_BIT 0x10
+
 struct inQueue {
 unsigned char data[BUFLEN];
 unsigned int count;
@@ -76,6 +79,7 @@ unsigned int  Ax25_In_Head = 0;
 unsigned int  Ax25_In_Tail = 0;
 unsigned int  Ax25_In_Dly = 0;
 unsigned int  clock_address = 0;
+unsigned int  daytime_flag_loc = 0;
 
 unsigned char RomImageType = 0; /*0 = generic, 1=hk21 2=u21 */
 unsigned char keybuf[16];
@@ -209,7 +213,6 @@ int rxcnt,x;
 unsigned short int mycrc;
 
 /* for setting tnc time from sys time */
-char fakeday[]="day 1505270713";
 time_t rawtime;
 struct tm *timeinfo;
 
@@ -304,16 +307,6 @@ struct tm *timeinfo;
   activity = 0;
   activity2 = 0;
 
-/* copy initial daytime command into keybuf careful only 15 chars allowed! */
-  do
-  {
-    keybuf[keyhead] = fakeday[keyhead];
-    keyhead++;
-  }
-  while (keyhead < 14);
-
-  keybuf[keyhead++] = 0x0d; /* place cr */
-
 /* If kiss mode, memorize certain ax25 parms to detect change later
    and send initial vals to kiss protocol */
   if(use_kiss)
@@ -379,6 +372,7 @@ better but for now it works */
         x= timeinfo->tm_year;
         x= x - ((x / 100) * 100);
         Ram[clock_address+5] = tobcd(x);
+	Ram[daytime_flag_loc] = Ram[daytime_flag_loc] | DAYTIME_CMD_BIT; /* set daytime set flag */
       }
 
       /* Check if any new bbs msgs have arrived and if so save ram to disk */
@@ -1151,6 +1145,7 @@ void ApplyRomPatches(void)
   {
     clock_address = 0x4f0a; /* Where tnc keeps time */
     bbsmsg_address = 0x4f06; /* where tnc stores msg count */
+    daytime_flag_loc = 0x3f16; /* where tnc stores flags for daytime cmd */
 
     /* Patch for rom we can manually patch later, Needed? */
 //    Rom[0x5032] = Rom[0x5041];
@@ -1169,6 +1164,7 @@ void ApplyRomPatches(void)
   {
     clock_address = 0x4f32; /* Where tnc keeps time */
     bbsmsg_address = 0x4f2e; /* where tnc stores msg count */
+    daytime_flag_loc = 0x3f16; /* where tnc stores flags for daytime cmd */
 
     /* Patch for rom we can manually patch later, Needed? */
     //Rom[0x5878] = Rom[0x5887];
