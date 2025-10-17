@@ -331,9 +331,7 @@ struct tm *timeinfo;
   SIO_Reset(&siob); /* Reset Emulated Serial i/o b */
 
   Z80Reset(&state);
-  total = timer_int = 0.0;
-
-	sio_int = 0;
+  total = timer_int = sio_int = 0;
 
   for ( ; ; ) /* Forever */
   {
@@ -352,7 +350,10 @@ better but for now it works */
     if( timer_int > 2750200 )
     {
       timer_int = 0;
-      total += Z80Interrupt (&state, 0x10 );
+      cycles = Z80Interrupt (&state, 0x10 );
+      total += cycles;
+      timer_int += cycles;
+      sio_int += cycles;
 
       /* here update tnc time with our time if we can */
       if( clock_address > 0 )
@@ -478,8 +479,8 @@ the machine you will be emulating on. */
           {
             if(siob.registers[1] & 2)
             {
-          // while(!state.iff1) total += Z80Emulate(&state, CYCES_PER_INT );
-              cycles = Z80Interrupt (&state, siob.registers[2] );
+              while(!state.iff1) cycles = Z80Emulate(&state, CYCLES_PER_INT ); /* was removed */
+              cycles += Z80Interrupt (&state, siob.registers[2] );
               total += cycles;
               sio_int += cycles;
             }
@@ -492,10 +493,19 @@ the machine you will be emulating on. */
         {
 // This breaks inital autobaud!   if(state.iff1 && (siob.registers[1] & 0x18) )
 //      {
-          total += Z80Interrupt (&state, siob.registers[2] | 4);
+          cycles = Z80Interrupt (&state, siob.registers[2] | 4);
+          total += cycles;
+          timer_int += cycles;
+          sio_int += cycles;
 //      }
         } 
-        else total += Z80Interrupt (&state, siob.registers[2] | 8 );
+        else 
+        {
+         cycles = Z80Interrupt (&state, siob.registers[2] | 8 );
+         total += cycles;
+         timer_int += cycles;
+         sio_int += cycles;
+        }
       }
 
       if(Ax25_In_HasData() && !RxCharIn_Idx && !ax25rdy && !txundr_count  && !Ax25_In_Dly ) /* do we have a socket */
@@ -843,7 +853,7 @@ void SIO_Cmd_Write( IC_SIO *sio, unsigned char x)
       sio->state = 0; /* next state is command */
     }
     else {
-      if(!(x & 0x38)) 
+      if((x & 0x38) == 0) 
       {
         sio->cmd_ptr = x & 0x07; /* lsb 3 bits select reg for next write/read */
         sio->state = 1; /* flip state */
