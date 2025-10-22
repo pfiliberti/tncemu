@@ -307,6 +307,12 @@ struct tm *timeinfo;
   activity = 0;
   activity2 = 0;
 
+  keybuf[keyhead] = '*';
+  keyhead++;
+  keybuf[keyhead] = 0x08;
+  keyhead++;
+
+
 /* If kiss mode, memorize certain ax25 parms to detect change later
    and send initial vals to kiss protocol */
   if(use_kiss)
@@ -440,8 +446,7 @@ the machine you will be emulating on. */
         {
           if(txundr_count)
           {
-            txundr_count--;
-            if(!txundr_count)
+            if(--txundr_count == 0)
             {
               feedflag = 1; /* txunderrun we can send packet!*/
               if(socket_active && Ax25_Out_Cnt)
@@ -845,7 +850,7 @@ void SIO_Cmd_Write( IC_SIO *sio, unsigned char x)
   }
   else /* set write register */
   {
-    if(x & 0x20) feedflag=0;
+    if(x == 0x28) feedflag=0;
     if(x == 8)  abortflag=1;/* Abort Seq SDLC */
     if(x == 0x18 ) /* handle special reset case */
     {
