@@ -5,6 +5,7 @@
  *
  * This program is free, do whatever you want with it.
  */
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,12 +16,17 @@
 #include <string.h> //memset
 #include <signal.h>
 #include <time.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <pty.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+//
 #include "./z80emu/z80emu.h"
 #include "tnc.h"
 #include "sio.h"
@@ -102,6 +108,11 @@ char *bbsmsg;
 unsigned int PrevbbsMsgNo;
 unsigned int bbsmsg_address = 0;
 
+// Added for pty support
+int serial_mode = 0;          // 0 = console (default), 1 = pty mode
+char pty_slave_name[128];     // name of the slave side, e.g. /dev/pts/3
+int pty_master_fd = -1;       // fd for emulator side (we read/write here)
+
 /* for test ax25 injection packet 1st byte is filler */
 //unsigned char TestAx25[22] = { 0x00, 0x86, 0xa2, 0x40, 0x40, 0x40, 0x40, 0x60, 0xae, 0x6e, 0x9a,
 //                                 0x82, 0x8e, 0x40, 0xe1, 0x03, 0xf0, 0x74, 0x65, 0x73, 0x74, 0x0d };
@@ -142,6 +153,7 @@ void WriteRamfile(void);
 void Detect_Rom_Version(void);
 void ApplyRomPatches(void);
 void RewriteBbsMsg(int);
+void drain_pty_to_queue(void);
 
 /***************************************************************************************/
 
@@ -156,7 +168,7 @@ int option = 0;
 	bbsmsg=defbbsmsg;
 
 /* Parse command line options */
-  while ((option = getopt(argc, argv,"kht:p:m:")) != -1) {
+  while ((option = getopt(argc, argv,"khst:p:m:")) != -1) {
     switch (option) 
     {
       case 'k' : use_kiss = 1;
@@ -166,6 +178,8 @@ int option = 0;
       case 'p' : port = optarg;
         break;
       case 'm' : bbsmsg = optarg;
+	break;
+      case 's' : serial_mode = 1;
 	break;
       case 'h' : print_info();
         die("Exiting...");
@@ -180,12 +194,47 @@ int option = 0;
   if(use_kiss) printf("KISS\n");
   else printf("AX25\n");
 
+  if (serial_mode) 
+  {
+    struct termios tio;
+    int slave_fd;
+
+    if (openpty(&pty_master_fd, &slave_fd, pty_slave_name, NULL, NULL) == -1) {
+        perror("openpty");
+        exit(1);
+    }
+
+    // Make master non-blocking so read() never blocks the CPU loop
+    fcntl(pty_master_fd, F_SETFL, O_NONBLOCK);
+
+    // Raw mode on master (no echo, no canonical)
+    tcgetattr(pty_master_fd, &tio);
+    cfmakeraw(&tio);
+    tio.c_oflag &= ~OPOST;            // *** crucial: disables CR → CR-LF and all other output processing ***
+    tcsetattr(pty_master_fd, TCSANOW, &tio);
+
+    char pty_slave_name[128] = "UNKNOWN";
+    ptsname_r(pty_master_fd, pty_slave_name, sizeof(pty_slave_name));
+
+    // Optional: some very old systems don't have ptsname_r, fallback:
+    //char *p = ptsname(pty_master_fd);
+    //if (p) strncpy(pty_slave_name, p, sizeof(pty_slave_name)-1);    
+
+    // You probably want to close the slave fd the emulator doesn't use
+    close(slave_fd);
+
+    printf("Serial mode enabled. Connect your application to: %s\n", pty_slave_name);
+    printf("Example: screen %s 9600 or minicom -D %s\n", pty_slave_name, pty_slave_name);
+  }
+  else
+  {
+    /* turn off canonical mode and echo on terminal */
+    system("stty -icanon -echo");
+    setbuf(stdout, NULL); /* no buffering on stdout */
+  }
+
   /* Register signal and signal handler */
   signal(SIGINT, signal_callback_handler);
-
-  /* turn off canonical mode and echo on terminal */
-  system("stty -icanon -echo");
-  setbuf(stdout, NULL); /* no buffering on stdout */
 
   /* select tnc eprom image to emulate */
   /* deprecated now using internally linked image however in future */
@@ -585,8 +634,9 @@ the machine you will be emulating on. */
       } /* end if socket active */
     } /* end if sio int */
 
-		// here check and handle console keyboard input
-		if(kbhit())
+    // here check and handle console keyboard input
+    if(serial_mode) drain_pty_to_queue();
+    else if(kbhit())
     {
       activity2 = 100;
       key=getchar();
@@ -798,7 +848,16 @@ void IO_out (int port, int x)
       break;
 
     case 0x1A: // SIOB Data
-      printf("%c",x);
+      if (serial_mode) 
+      {
+        // Write to pty master instead of console
+        unsigned char c = x;  // or whatever the output byte variable is
+        write(pty_master_fd, &c, 1);
+      }
+      else
+      {
+        printf("%c",x);
+      }
       activity = 0;
       break;
 
@@ -1043,6 +1102,7 @@ void print_info(void)
   printf("-t target host ip address or dns name\n");
   printf("-p targt port (default 10093)\n");
   printf("-k Kiss Protocol (Default is ax25)\n");
+  printf("-s Use Pseudo Terminal (pty) for console\n");
   printf("-m Bulletin Board Welcome Msg \"Message\" Max 21 Chars!\n");
 }
 
@@ -1248,3 +1308,22 @@ void RewriteBbsMsg(int addr)
   }
 }
 
+void drain_pty_to_queue(void)
+{
+    unsigned char buf[1];
+    int n;
+
+    if (!serial_mode || pty_master_fd == -1) return;
+    
+    if ( ((keyhead + 1) & 0x0f) == keytail) return; /* no room */
+
+    while ((n = read(pty_master_fd, buf, sizeof(buf))) > 0)
+    {
+      // add to key buffer
+      keybuf[keyhead] = buf[0];
+      keyhead++;
+      keyhead &= 0x0f;
+
+      if ( ((keyhead + 1) & 0x0f) == keytail) break; /* no room */
+    }
+}
