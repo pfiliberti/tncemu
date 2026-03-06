@@ -15,6 +15,7 @@ RAMFILE = $(if $(ROMSRC),$(ROMBASE).ram,tnc.ram)
 
 CC = gcc
 CFLAGS = -Wall -O3 -funroll-loops -fomit-frame-pointer -mtune=native
+LDLIBS = -lutil
 
 # Detect architecture automatically using uname
 UNAME := $(shell uname -m)
@@ -71,7 +72,7 @@ prepare_rom:
 	cp $(ROMSRC) $(ROMIMAGE)
 
 tnc: rom.o $(OBJECT_FILES)
-	$(CC) $(OBJECT_FILES) rom.o -o $@
+	$(CC) $(OBJECT_FILES) rom.o -o $@ $(LDLIBS)
 
 crc: crc.o
 	$(CC) crc.o -o $@
