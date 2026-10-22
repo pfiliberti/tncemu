@@ -84,6 +84,7 @@ struct inQueue       Ax25_In_Q[AX25_IN_MAXSIZE];
 unsigned int  Ax25_In_Head = 0;
 unsigned int  Ax25_In_Tail = 0;
 unsigned int  Ax25_In_Dly = 0;
+
 unsigned int  clock_address = 0;
 unsigned int  daytime_flag_loc = 0;
 
@@ -107,6 +108,8 @@ char *bbsmsg;
 
 unsigned int PrevbbsMsgNo;
 unsigned int bbsmsg_address = 0;
+
+bool newMsg = false;          // True when a new bbs msg has been received
 
 // Added for pty support
 int serial_mode = 0;          // 0 = console (default), 1 = pty mode
@@ -434,6 +437,11 @@ better but for now it works */
       /* Check if any new bbs msgs have arrived and if so save ram to disk */
       if( PrevbbsMsgNo != GetNextBbsMsgNo())
       {
+        /* Check if next bbs msg no is > than previous otherwise no new msg */
+        if(GetNextBbsMsgNo() > PrevbbsMsgNo)
+        {
+          newMsg = true;
+        }
           PrevbbsMsgNo = GetNextBbsMsgNo();
           WriteRamfile();
       }
@@ -642,6 +650,12 @@ the machine you will be emulating on. */
       key=getchar();
       if(key == 0x0a) key=0x0d;
       if(key == 0x7f) key=0x08;
+      if(key == 0x0d && newMsg)
+      {
+         printf("\nYou have new msgs.\n");
+         newMsg = false;
+      }
+
 #ifdef DEBUG
       if(key == '&') RxCharIn_Idx=1; // Trigger to inject test ax25 packet
       else
@@ -898,33 +912,57 @@ void SIO_Reset( IC_SIO *sio )
 /* Handle Writes to SIO Command Port */
 void SIO_Cmd_Write( IC_SIO *sio, unsigned char x)
 {
+  unsigned char wr0_cmd = x & 0x38;
   if(sio->state) /* write to actual reg */
   {
 //    if(abortflag && sio->cmd_ptr == 5 && !(x & 2)) 
 //      printf("PC=%x\n",state.pc);
-
     sio->registers[sio->cmd_ptr] = x; 
     sio->cmd_ptr = 0; /* after a write it sets back to 0 */
     sio->state = 0; /* next state is command */
   }
   else /* set write register */
   {
-    if(x == 0x28) feedflag=0;
-    if(x == 8)  abortflag=1;/* Abort Seq SDLC */
-    if(x == 0x18 ) /* handle special reset case */
+    if(wr0_cmd != 0) /* A command for sio ? */
     {
-      sio->cmd_ptr = 0; /* after a write it sets back to 0 */
-      sio->state = 0; /* next state is command */
-    }
-    else {
-      if((x & 0x38) == 0) 
+      switch (wr0_cmd) // Process special cmd
       {
-        sio->cmd_ptr = x & 0x07; /* lsb 3 bits select reg for next write/read */
-        sio->state = 1; /* flip state */
+        case 0x08:    // Abort SDLC Seq 
+          abortflag = 1;
+          break;
+
+        case 0x10:
+          // external status interrupt reset
+          break;
+
+        case 0x18:
+          SIO_Reset(sio); /* sio logic reset */
+          return;
+
+        case 0x20:
+          // enable interrupt on next receive char
+          break;
+
+        case 0x28: // Reset Interrupt Pending
+          feedflag = 0;
+          break;
+
+        case 0x30:
+          // CLear Latched error bits
+          break;
+
+        case 0x38:
+          // return from interrupt
+          break;
       }
     }
+    else // Cmd 0 = set reg address 
+    {
+      sio->cmd_ptr = x & 0x07; /* lsb 3 bits select reg for next write/read */
+      sio->state = 1; /* flip state */
+    }
+    if((x & 0xc0) == 0xc0) feedflag = 0;
   }
-
 }
 
 /* Handle Reads from SIO Command Port */
@@ -1237,6 +1275,14 @@ void ApplyRomPatches(void)
     /* Replaces "Heath System" */
     RewriteBbsMsg(0x2dad);
 
+    /* patch to always load 0 from TXDELAY */
+    /* code at 0x4bfe in Rom reads from TXDELAY */
+    /* 4bfe ld a,(0bfdbh) 3a db bf */
+    /* replace with nop xora inc a 00 af 3c*/
+
+    Rom[0x4bfe] = 0; /* plant nop */
+    Rom[0x4bff] = 0xaf; /* plant xor a */
+    Rom[0x4c00] = 0x3c; /* plant inc a */
   }
   else if(RomImageType == 2) /* Apply u21 Patches */
   {
